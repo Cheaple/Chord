@@ -19,3 +19,10 @@
 
 # Go workspace file
 go.work
+
+# use data
+test.txt
+main/data/*
+
+# main .exe
+main/chord
