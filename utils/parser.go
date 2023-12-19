@@ -14,9 +14,9 @@ type Arguments struct {
 	Port        	int     // Port that the Chord client will bind to and listen on
 	JoinAddress 	string	// IP address of the machine running a Chord node. The Chord client will join this node’s ring.
 	JoinPort    	int     // Port that an existing Chord node is bound to and listening on. The Chord client will join this node’s ring.
-	Stabilize_t 	int     // Time in milliseconds between invocations of stabilize
-	FixFinger_t 	int     // Time in milliseconds between invocations of fix_finger.
-	CheckPred_t 	int     // Time in milliseconds between invocations of check_predecessor
+	StabilizeTime 	int     // Time in milliseconds between invocations of stabilize
+	FixFingerTime 	int     // Time in milliseconds between invocations of fix_finger.
+	CheckPredTime 	int     // Time in milliseconds between invocations of check_predecessor
 	CntSuccessors  	int		// Number of successors maintained by the Chord client
 	Identifier  	string  // Identifier
 }
@@ -52,9 +52,9 @@ func ParseCmdArgs() (Arguments, error) {
 		Port:        	p,
 		JoinAddress: 	string(ja),
 		JoinPort:    	jp,
-		Stabilize_t: 	ts,
-		FixFinger_t: 	tff,
-		CheckPred_t: 	tcp,
+		StabilizeTime: 	ts,
+		FixFingerTime: 	tff,
+		CheckPredTime: 	tcp,
 		CntSuccessors:  r,
 		Identifier:  	i,
 	}
@@ -75,15 +75,15 @@ func validateArgs(args Arguments) error {
 		return errors.New("Invalid argument -p (port for the current node)")
 	}
 
-	if args.Stabilize_t < 1 || args.Stabilize_t > 60000 {
+	if args.StabilizeTime < 1 || args.StabilizeTime > 60000 {
 		return errors.New("Invalid argument -ts")
 	}
 	
-	if args.FixFinger_t < 1 || args.FixFinger_t > 60000 {
+	if args.FixFingerTime < 1 || args.FixFingerTime > 60000 {
 		return errors.New("Invalid argument -tff")
 	}
 	
-	if args.CheckPred_t < 1 || args.CheckPred_t > 60000 {
+	if args.CheckPredTime < 1 || args.CheckPredTime > 60000 {
 		return errors.New("Invalid argument -tcp")
 	}
 

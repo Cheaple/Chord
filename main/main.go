@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
@@ -27,56 +28,13 @@ func ConnHandler(listener net.Listener, node *chord.Node) {
 	}
 }
 
-func main() {
-	// Parse command line arguments
-	args, err := utils.ParseCmdArgs()
-	if err != nil {
-		fmt.Println("Error parsing arguments: ", err)
-		os.Exit(1)
-	}
-
-	node := chord.NewNode(args)
-	rpc.Register(node)
-
-	////************************** Config network info and deployment *****************************////
-	IPAddr := fmt.Sprintf("%s:%d", args.Address, args.Port)
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", IPAddr)
-	if err != nil {
-		fmt.Println("ResolveTCPAddr failed:", err.Error())
-		os.Exit(1)
-	}
-
-	// Listen to the address
-	listener, err := net.Listen("tcp", tcpAddr.String())
-	if err != nil {
-		fmt.Println("ListenTCP failed:", err.Error())
-		os.Exit(1)
-	}
-	fmt.Println("Local node listening on ", tcpAddr)
-
-	// Use a separate goroutine to accept connection
-	go ConnHandler(listener, node)
-
-	////************************* Chord node initialization operation *****************************////
-	if args.JoinAddress != "Unspecified" {  // Join exsiting chord
-		RemoteAddr := fmt.Sprintf("%s:%d", args.JoinAddress, args.JoinPort)
-		fmt.Println("Connecting to the remote node..." + RemoteAddr)
-		err := node.JoinChord(chord.NodeAddress(RemoteAddr))
-		if err != nil {
-			fmt.Println("Join RPC call failed")
-			os.Exit(1)
-		} else {
-			fmt.Println("Join RPC call success")
-		}
-	} else {  // Create new chord
-		node.CreateChord()
-	}
-
-	
-	////************************************* Chordshell *****************************************////
+//
+// Chord Client Shell
+//
+func (node *Node) runChordClient() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Printf("%s@Chord: node-%s > ", node.Addr, node.Identifier)
+		fmt.Printf("%s@Chord: node-%s > ", node.Address, node.Identifier)
 		input, _ := reader.ReadString('\n')
 		cmdArgs := strings.Fields(input)
 		if len(cmdArgs) < 1 {
@@ -85,7 +43,6 @@ func main() {
 		cmd := strings.ToUpper(strings.TrimSpace(cmdArgs[0]))
 
 		if cmd == "PRINTSTATE" || cmd == "PS" {
-			fmt.Println("-------------- Current Node State --------------")
 			node.PrintState()
 			continue
 
@@ -126,7 +83,7 @@ func main() {
 				fmt.Println("The file is not stored in the node")
 			}
 
-		} else if cmd == "GET" || cmd == "G" {
+		} else if cmd == "GETFILE" || cmd == "GET" || cmd == "G" {
 			if len(cmdArgs) < 2 {
 				fmt.Printf("Invalid command. ")
 				fmt.Println("Usage: GET <filename>")
@@ -141,7 +98,7 @@ func main() {
 			}
 			fmt.Println("GET Success")
 
-		} else if cmd == "STOREFILE" || cmd == "S" {
+		} else if cmd == "STOREFILE" || cmd == "STORE" || cmd == "S" {
 			if len(cmdArgs) < 2 {
 				fmt.Printf("Invalid command. ")
 				fmt.Println("Usage: STOREFILE <filepath>")
@@ -158,11 +115,63 @@ func main() {
 			fmt.Println("STOREFILE Success")
 
 		} else if cmd == "QUIT" || cmd == "Q" {
-			// Quit the program
+			log.Println("Chord node exit!")
 			os.Exit(0)
 
 		} else {
-			fmt.Println("Invalid command")
+			fmt.Println("Invalid command!")
 		}
 	}
+
+}
+
+func main() {
+	// Parse command line arguments
+	args, err := utils.ParseCmdArgs()
+	if err != nil {
+		fmt.Println("Error parsing arguments: ", err)
+		os.Exit(1)
+	}
+
+	node := chord.NewNode(args)
+	rpc.Register(node)
+
+	////************************** Config network info and deployment *****************************////
+	//
+	IPAddr := fmt.Sprintf("%s:%d", args.Address, args.Port)
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", IPAddr)
+	if err != nil {
+		fmt.Println("ResolveTCPAddr failed:", err.Error())
+		os.Exit(1)
+	}
+
+	// Listen to the address
+	listener, err := net.Listen("tcp", tcpAddr.String())
+	if err != nil {
+		fmt.Println("ListenTCP failed:", err.Error())
+		os.Exit(1)
+	}
+	fmt.Println("Local node listening on ", tcpAddr)
+
+	// Use a separate goroutine to accept connection
+	go ConnHandler(listener, node)
+
+
+	////************************* Chord node initialization operation *****************************////
+	//
+	if args.JoinAddress != "Unspecified" {  // Join exsiting chord
+		RemoteAddr := fmt.Sprintf("%s:%d", args.JoinAddress, args.JoinPort)
+		fmt.Println("Connecting to the remote node..." + RemoteAddr)
+		err := node.JoinChord(chord.NodeAddress(RemoteAddr))
+		if err != nil {
+			fmt.Println("Join RPC call failed")
+			os.Exit(1)
+		} else {
+			fmt.Println("Join RPC call success")
+		}
+	} else {  // Create new chord
+		node.CreateChord()
+	}
+
+	go runChordClient()	
 }
