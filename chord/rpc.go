@@ -6,4 +6,5 @@ package chord
 func call(address string, method string, request interface{}, reply interface{}) error {
 
 	
+	return nil
 }

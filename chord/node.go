@@ -1,9 +1,8 @@
 package chord
 
 import (
-	"crypto/sha1"
 	"fmt"
-	"log"
+	// "log"
 	"math/big"
 	"os"
 	"time"
@@ -12,45 +11,18 @@ import (
 )
 
 
-const m = 6  // m-bit identifier
-var fingerTableSize = m
 
-type Key string
-
-type NodeAddress string
-
-type Node struct {
-	Name       	string   			// Name: IP:Port or User specified Name. Exp: [N]14
-	Identifier	*big.Int 			// Hash(Address) -> Chord space Identifier
-
-    Address    	NodeAddress
-    FingerTable	[]NodeEntry
-    Predecessor	NodeAddress
-    Successors 	[]NodeEntry
-
-    Bucket map[Key]string
-
-
-}
-
-
-type NodeEntry struct {
-	Identifier	int
-	Address		NodeAddress
-}
-
-func hashString(elt string) *big.Int {
-    hasher := sha1.New()
-    hasher.Write([]byte(elt))
-    return new(big.Int).SetBytes(hasher.Sum(nil))
-}
+/* ******************************************************************************* *
+ * ******************************** Basic Operations ***************************** */
 
 //
 // Create a new Chord n,
 // and create or join a Chor ring
 //
 func MakeNode(args utils.Arguments) *Node {
-	node := &Node{}
+	node := &Node{
+		doneCh: make(chan struct{}),
+	}
 
 	node.Address = NodeAddress(fmt.Sprintf("%s:%d", args.Address, args.Port))
 	if args.Identifier == "" {
@@ -61,12 +33,11 @@ func MakeNode(args utils.Arguments) *Node {
 	}
 
 
-	node.FingerTable = make([]NodeEntry, fingerTableSize + 1)
-	node.Successors = make([]NodeEntry, args.CntSuccessors)
+	node.FingerTable = node.makeNodeTable(M)
+	node.Successors = node.makeNodeTable(args.CntSuccessors)
 	node.Bucket = make(map[Key]string)	
 
-	// TODO: init FingerTable
-	// TODO: init Successors
+
 
 	// Join or Create a Chord ring
 	if args.JoinAddress != "" {
@@ -134,12 +105,6 @@ func MakeNode(args utils.Arguments) *Node {
 func (n *Node) create() {
 	n.Predecessor = ""
 	// n.Predecessor = n.Address
-
-	// init successor list
-	for i := 0; i < len(n.Successors); i++ {
-		n.Successors[i].Id = n.Identifier.Bytes()
-		n.Successors[i].Addr = n.Address
-	}
 }
 
 //
@@ -149,40 +114,78 @@ func (n *Node) join(joined NodeAddress) error {
 	n.Predecessor = ""
 
 
+
+
+	return nil
 }
+
+
+/* ******************************************************************************* *
+ * ******************************** Client Operations **************************** */
 
 //
 // Print current state
 //
-func (n *Node) print() {
+func (n *Node) Print() {
 	fmt.Println("Node Address:", n.Address)
 	fmt.Println("Node Identifier:", new(big.Int).SetBytes(n.Identifier.Bytes()))
-	fmt.Println("Node Predecessor:", node.Predecessor)
+	fmt.Println("Node Predecessor:", n.Predecessor)
 
-	fmt.Println("----- Successor List -----")
+	fmt.Println("------ Successor List ------")
 	fmt.Println("Successors  |  Identifier  |  Address ")
 	for i := 0; i < len(n.Successors); i++ {
-		enrty := n.Successors[i]
-		id := new(big.Int).SetBytes(enrty.Id)
-		address := enrty.Addr
+		entry := n.Successors[i]
+		id := new(big.Int).SetBytes(entry.Id)
+		address := entry.Address
 		fmt.Printf("%6d  |  %10d  |  %s\n", i, id, address)
 	}
 	
-	fmt.Println("----- Finger Table ----")
+	fmt.Println("------ Finger Table ------")
 	fmt.Println("Finger  |  Identifier  |  Address ")
 	for i := 0; i < len(n.FingerTable); i++ {
-		enrty := n.FingerTable[i]
-		id := new(big.Int).SetBytes(enrty.Id)
-		address := enrty.Addr
-		fmt.Printf("%6d  |  %10d  |  %s\n", i, id, address)
+		entry := n.FingerTable[i]
+		fmt.Printf("%6d  |  %10d  |  %s\n", i, entry.Id, entry.Address)
 	}
 
 	fmt.Println("----- Buckets -----")
 	fmt.Println("Key  |  Identifier  |  Address ")
-	for k, v := range node.Bucket {
+	for k, v := range n.Bucket {
 		fmt.Printf("%6d  |  %s\n", k, v)
 	}
 }
+
+
+//
+// Look up a key in the Chord ring
+//
+func (n *Node) LookUp(key string) (string, error) {
+
+
+	return "", nil
+}
+
+//
+// Download a file from the Chord ring
+//
+func (n *Node) Get(fileName string) (string, error) {
+
+	return "", nil
+}
+
+//
+// Store a file in the Chord ring
+//
+func (n *Node) Store(filePath string) (string, error) {
+
+
+	return "", nil
+}
+
+
+
+
+/* ******************************************************************************* *
+ * ****************************** Periodical Operations ************************** */
 
 //
 // Each node periodically calls stabilize
@@ -191,16 +194,22 @@ func (n *Node) print() {
 func (n *Node) stabilize() error {
 
 
+	return nil
 }
 
 //
 // Each node periodically calls fix fingers to 
 // make sure its finger table entries are correct
 //
-func (n *Node) fixFinger() error {
+// paras:
+// 	next: stores the index of the next finger to fix
+//
+func (n *Node) fixFinger(next int) int {
 	// new nodes initialize their finger tables
 	// existing nodes incorporate new nodes into their finger tables
+	
 
+	return 0
 }
 
 //
@@ -210,5 +219,5 @@ func (n *Node) fixFinger() error {
 //
 func (n *Node) checkPredecessor() error {
 
-
+	return nil
 }

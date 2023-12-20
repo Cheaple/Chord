@@ -9,7 +9,6 @@ import (
 	"net/rpc/jsonrpc"
 	"os"
 	"strings"
-	"time"
 
 	"chord/chord"
 	"chord/utils"
@@ -31,7 +30,7 @@ func ConnHandler(listener net.Listener, node *chord.Node) {
 //
 // Chord Client Shell
 //
-func (node *Node) runChordClient() {
+func runChordClient(node *chord.Node) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Printf("%s@Chord: node-%s > ", node.Address, node.Identifier)
@@ -43,7 +42,7 @@ func (node *Node) runChordClient() {
 		cmd := strings.ToUpper(strings.TrimSpace(cmdArgs[0]))
 
 		if cmd == "PRINTSTATE" || cmd == "PS" {
-			node.PrintState()
+			node.Print()
 			continue
 
 		} else if cmd == "LOOKUP" || cmd == "L" {
@@ -55,33 +54,14 @@ func (node *Node) runChordClient() {
 
 			// Look up for a filename in the Chord ring
 			filename := cmdArgs[1]
-			resultAddr, err := chord.ClientLookUp(filename, node)
+			resultAddr, err := node.LookUp(filename)
 			if err != nil {
 				fmt.Println("Error looking up file:", err)
 				continue
 			}
 			fmt.Printf("The file should be in Node (%s)\n", resultAddr)
 
-			// Check if the file is stored in the node
-			reply := chord.CheckFileExistRPCReply{}
-			err = chord.ChordCall(resultAddr, "Node.CheckFileExistRPC", filename, &reply)
-			if err != nil {
-				fmt.Println("Error checking file's existence:", err)
-				continue
-			}
-
-			if reply.Exist {
-				// Get the address of the node that stores the file
-				var getNameRPCReply chord.GetNameRPCReply
-				err = chord.ChordCall(resultAddr, "Node.GetNameRPC", "", &getNameRPCReply)
-				if err != nil {
-					fmt.Println("Node.GetNameRPC() RPC call failed in main()")
-				} else {
-					fmt.Println("The file is stored at", getNameRPCReply.Name)
-				}
-			} else {
-				fmt.Println("The file is not stored in the node")
-			}
+			// TODO: check file existence
 
 		} else if cmd == "GETFILE" || cmd == "GET" || cmd == "G" {
 			if len(cmdArgs) < 2 {
@@ -92,7 +72,7 @@ func (node *Node) runChordClient() {
 			
 			// Download a file from the Chord ring
 			fileName := cmdArgs[1]
-			err := chord.ClientGetFile(fileName, node)
+			_, err := node.Get(fileName)
 			if err != nil {
 				continue
 			}
@@ -107,7 +87,7 @@ func (node *Node) runChordClient() {
 			
 			// Upload a local file to the Chord ring
 			fileName := cmdArgs[1]
-			err := chord.ClientStoreFile(fileName, node)
+			_, err := node.Store(fileName)
 			if err != nil {
 				fmt.Println("Error storing file:", err)
 				continue
@@ -133,7 +113,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	node := chord.NewNode(args)
+	node := chord.MakeNode(args)
 	rpc.Register(node)
 
 	////************************** Config network info and deployment *****************************////
@@ -156,22 +136,5 @@ func main() {
 	// Use a separate goroutine to accept connection
 	go ConnHandler(listener, node)
 
-
-	////************************* Chord node initialization operation *****************************////
-	//
-	if args.JoinAddress != "Unspecified" {  // Join exsiting chord
-		RemoteAddr := fmt.Sprintf("%s:%d", args.JoinAddress, args.JoinPort)
-		fmt.Println("Connecting to the remote node..." + RemoteAddr)
-		err := node.JoinChord(chord.NodeAddress(RemoteAddr))
-		if err != nil {
-			fmt.Println("Join RPC call failed")
-			os.Exit(1)
-		} else {
-			fmt.Println("Join RPC call success")
-		}
-	} else {  // Create new chord
-		node.CreateChord()
-	}
-
-	go runChordClient()	
+	go runChordClient(node)	
 }
