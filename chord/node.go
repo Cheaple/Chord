@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"chord/utils"
+	"chord/chord/rpc"
+	"google.golang.org/grpc"
 )
 
 
@@ -17,7 +19,7 @@ import (
 
 //
 // Create a new Chord n,
-// and create or join a Chor ring
+// and create or join a Chord ring
 //
 func MakeNode(args utils.Arguments) *Node {
 	node := &Node{
@@ -31,13 +33,10 @@ func MakeNode(args utils.Arguments) *Node {
 		node.Identifier = new(big.Int)
 		node.Identifier.SetString(args.Identifier, 16)  // string of 16-bit int to big.Int
 	}
-
-
-	node.FingerTable = node.makeNodeTable(M)
-	node.Successors = node.makeNodeTable(args.CntSuccessors)
+	node.FingerTable = node.makeNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
+	node.Predecessor = ""
+	node.Successors = node.makeNodeTable(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[Key]string)	
-
-
 
 	// Join or Create a Chord ring
 	if args.JoinAddress != "" {
@@ -50,10 +49,10 @@ func MakeNode(args utils.Arguments) *Node {
 		}
 	} else {
 		fmt.Println("Creating a new Chord ring at node", node.Address)
-		node.create()
+		// node.create()
 	}
 
-	// Peridoically stabilize
+	// Periodically stabilize
 	go func() {
 		ticker := time.NewTicker(time.Duration(args.StabilizeTime) * time.Millisecond)
 		for {
@@ -67,7 +66,7 @@ func MakeNode(args utils.Arguments) *Node {
 		}
 	}()
 
-	// Peridoically fix finger tables
+	// Periodically fix finger tables
 	go func() {
 		next := 0
 		ticker := time.NewTicker(time.Duration(args.FixFingerTime) * time.Millisecond)
@@ -82,7 +81,7 @@ func MakeNode(args utils.Arguments) *Node {
 		}
 	}()
 
-	// Peridoically checkes predecessor	
+	// Periodically checkes predecessor	
 	go func() {
 		ticker := time.NewTicker(time.Duration(args.CheckPredTime) * time.Millisecond)
 		for {
@@ -99,24 +98,56 @@ func MakeNode(args utils.Arguments) *Node {
 	return node
 }
 
+// //
+// // Create a new Chord ring
+// //
+// func (n *Node) create() {
+// 	n.Predecessor = ""
+// 	// n.Predecessor = n.Address
+// }
+
 //
-// Create a new Chord ring
+// Join an old Chord ring that contains a node at joinedAddress
 //
-func (n *Node) create() {
+func (n *Node) join(joinedAddress NodeAddress) error {
 	n.Predecessor = ""
-	// n.Predecessor = n.Address
+	
+	succ, err := n.findSuccessorRPC(foo, n.Id)
+	if err != nil {
+		return err
+	}
+	n.successor = succ
+	
+	return nil
 }
 
 //
-// Join an old Chord ring
+// Find an identifier's successor in the Chord ring
 //
-func (n *Node) join(joined NodeAddress) error {
-	n.Predecessor = ""
+func (n *Node) findSuccessor(id *bigInt) (NodeEntry, error) {
+	succ := n.Successors[0]
+	succId := new(bigInt).SetBytes(succ.Identifier)
+	if between(n.Id, id, succId, true) {
+		return succ, nil
+	}
 
+	pred := n.closestPreceding(id)
 
+	return rpc.findSuccessor(pred, id)
+}
 
-
-	return nil
+//
+// Search the local table for the highest predecessor of id
+//
+func (n *Node) closestPreceding(id *bigInt) NodeEntry {
+	for i := M; i > 0; i-- {
+		prec := n.FingerTable[i]
+		precId := new(bigInt).SetBytes(prec.Identifier)
+		if between(n.Id, precId, id, false) {
+			return prec
+		}
+	}
+	return n.FingerTable[0]
 }
 
 

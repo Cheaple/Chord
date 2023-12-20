@@ -14,19 +14,6 @@ import (
 	"chord/utils"
 )
 
-
-
-func ConnHandler(listener net.Listener, node *chord.Node) {
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("Accept failed:", err.Error())
-			continue
-		}
-		go jsonrpc.ServeConn(conn)
-	}
-}
-
 //
 // Chord Client Shell
 //
@@ -134,7 +121,16 @@ func main() {
 	fmt.Println("Local node listening on ", tcpAddr)
 
 	// Use a separate goroutine to accept connection
-	go ConnHandler(listener, node)
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				fmt.Println("Accept failed:", err.Error())
+				continue
+			}
+			go jsonrpc.ServeConn(conn)
+		}
+	}()
 
 	go runChordClient(node)	
 }

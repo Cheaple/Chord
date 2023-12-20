@@ -21,7 +21,7 @@ func (n *Node) makeNodeTable(size int) NodeTable {
 	tbl := make([]NodeEntry, size)
 
 	for i := range tbl {
-		tbl[i].Id = n.Identifier.Bytes()
+		copy(tbl[i].Identifier, n.Identifier.Bytes())
 		tbl[i].Address = n.Address
 	}
 

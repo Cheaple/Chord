@@ -25,4 +25,4 @@ test.txt
 main/data/*
 
 # main .exe
-main/chord
+chord.exe
