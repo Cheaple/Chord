@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"net"
-	"net/rpc"
-	"net/rpc/jsonrpc"
 	"os"
 	"strings"
 
@@ -20,7 +17,7 @@ import (
 func runChordClient(node *chord.Node) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Printf("%s@Chord: node-%s > ", node.Address, node.Identifier)
+		fmt.Printf("%s@Chord: node-%s > ", node.Address, node.Id)
 		input, _ := reader.ReadString('\n')
 		cmdArgs := strings.Fields(input)
 		if len(cmdArgs) < 1 {
@@ -82,7 +79,7 @@ func runChordClient(node *chord.Node) {
 			fmt.Println("STOREFILE Success")
 
 		} else if cmd == "QUIT" || cmd == "Q" {
-			log.Println("Chord node exit!")
+			log.Println("Exit Chord Ring!")
 			os.Exit(0)
 
 		} else {
@@ -101,36 +98,5 @@ func main() {
 	}
 
 	node := chord.MakeNode(args)
-	rpc.Register(node)
-
-	////************************** Config network info and deployment *****************************////
-	//
-	IPAddr := fmt.Sprintf("%s:%d", args.Address, args.Port)
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", IPAddr)
-	if err != nil {
-		fmt.Println("ResolveTCPAddr failed:", err.Error())
-		os.Exit(1)
-	}
-
-	// Listen to the address
-	listener, err := net.Listen("tcp", tcpAddr.String())
-	if err != nil {
-		fmt.Println("ListenTCP failed:", err.Error())
-		os.Exit(1)
-	}
-	fmt.Println("Local node listening on ", tcpAddr)
-
-	// Use a separate goroutine to accept connection
-	go func() {
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				fmt.Println("Accept failed:", err.Error())
-				continue
-			}
-			go jsonrpc.ServeConn(conn)
-		}
-	}()
-
-	go runChordClient(node)	
+	runChordClient(node)	
 }

@@ -2,16 +2,25 @@ package chord
 
 import (
 	"fmt"
-	// "log"
+	"log"
 	"math/big"
 	"os"
 	"time"
 
 	"chord/utils"
-	"chord/chord/rpc"
-	"google.golang.org/grpc"
 )
 
+
+//
+//  Helper function for printng debugging logs
+//
+func (n *Node) DPrintf(args ...interface{}) {
+	if n.verbose != true {
+		return
+	}
+	message := fmt.Sprint(args...)
+	log.Println(fmt.Sprintf("----- node-%d () %s -----", n.Id, n.Address, message))
+}
 
 
 /* ******************************************************************************* *
@@ -24,14 +33,15 @@ import (
 func MakeNode(args utils.Arguments) *Node {
 	node := &Node{
 		doneCh: make(chan struct{}),
+		verbose: args.Verbose,
 	}
 
 	node.Address = NodeAddress(fmt.Sprintf("%s:%d", args.Address, args.Port))
-	if args.Identifier == "" {
-		node.Identifier = hashString(string(node.Address))
+	if args.IdentifierStr == "" {
+		node.Id = hashString(string(node.Address))
 	} else {
-		node.Identifier = new(big.Int)
-		node.Identifier.SetString(args.Identifier, 16)  // string of 16-bit int to big.Int
+		node.Id = new(big.Int)
+		node.Id.SetString(args.IdentifierStr, 16)  // string of 16-bit int to big.Int
 	}
 	node.FingerTable = node.makeNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
 	node.Predecessor = ""
@@ -111,108 +121,43 @@ func MakeNode(args utils.Arguments) *Node {
 //
 func (n *Node) join(joinedAddress NodeAddress) error {
 	n.Predecessor = ""
-	
-	succ, err := n.findSuccessorRPC(foo, n.Id)
-	if err != nil {
-		return err
+	n.Successors[1] = NodeEntry{
+		Identifier: hashString(string(joinedAddress)).Bytes(),
+		Address: joinedAddress,
 	}
-	n.successor = succ
-	
 	return nil
 }
 
 //
 // Find an identifier's successor in the Chord ring
 //
-func (n *Node) findSuccessor(id *bigInt) (NodeEntry, error) {
+func (n *Node) findSuccessor(id *big.Int) (NodeEntry, error) {
+	n.DPrintf("findSuccessor(): id = %d", id)
 	succ := n.Successors[0]
-	succId := new(bigInt).SetBytes(succ.Identifier)
+	succId := new(big.Int).SetBytes(succ.Identifier)
 	if between(n.Id, id, succId, true) {
 		return succ, nil
 	}
 
 	pred := n.closestPreceding(id)
 
-	return rpc.findSuccessor(pred, id)
+	return n.findSuccessorRPC(pred, id)
 }
 
 //
 // Search the local table for the highest predecessor of id
 //
-func (n *Node) closestPreceding(id *bigInt) NodeEntry {
+func (n *Node) closestPreceding(id *big.Int) NodeEntry {
+	n.DPrintf("closestPreceding(): id = %d", id)
 	for i := M; i > 0; i-- {
 		prec := n.FingerTable[i]
-		precId := new(bigInt).SetBytes(prec.Identifier)
+		precId := new(big.Int).SetBytes(prec.Identifier)
 		if between(n.Id, precId, id, false) {
 			return prec
 		}
 	}
 	return n.FingerTable[0]
 }
-
-
-/* ******************************************************************************* *
- * ******************************** Client Operations **************************** */
-
-//
-// Print current state
-//
-func (n *Node) Print() {
-	fmt.Println("Node Address:", n.Address)
-	fmt.Println("Node Identifier:", new(big.Int).SetBytes(n.Identifier.Bytes()))
-	fmt.Println("Node Predecessor:", n.Predecessor)
-
-	fmt.Println("------ Successor List ------")
-	fmt.Println("Successors  |  Identifier  |  Address ")
-	for i := 0; i < len(n.Successors); i++ {
-		entry := n.Successors[i]
-		id := new(big.Int).SetBytes(entry.Id)
-		address := entry.Address
-		fmt.Printf("%6d  |  %10d  |  %s\n", i, id, address)
-	}
-	
-	fmt.Println("------ Finger Table ------")
-	fmt.Println("Finger  |  Identifier  |  Address ")
-	for i := 0; i < len(n.FingerTable); i++ {
-		entry := n.FingerTable[i]
-		fmt.Printf("%6d  |  %10d  |  %s\n", i, entry.Id, entry.Address)
-	}
-
-	fmt.Println("----- Buckets -----")
-	fmt.Println("Key  |  Identifier  |  Address ")
-	for k, v := range n.Bucket {
-		fmt.Printf("%6d  |  %s\n", k, v)
-	}
-}
-
-
-//
-// Look up a key in the Chord ring
-//
-func (n *Node) LookUp(key string) (string, error) {
-
-
-	return "", nil
-}
-
-//
-// Download a file from the Chord ring
-//
-func (n *Node) Get(fileName string) (string, error) {
-
-	return "", nil
-}
-
-//
-// Store a file in the Chord ring
-//
-func (n *Node) Store(filePath string) (string, error) {
-
-
-	return "", nil
-}
-
-
 
 
 /* ******************************************************************************* *

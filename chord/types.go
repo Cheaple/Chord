@@ -6,7 +6,7 @@ import (
 )
 
 
-const M = 6  // m-bit identifier
+const M = 7  // m-bit identifier
 
 type Key string
 
@@ -24,6 +24,8 @@ type Node struct {
     Bucket 		map[Key]string
 
 	doneCh		chan struct{}
+
+    verbose     bool                // whether to print log
 }
 
 type NodeEntry struct {
@@ -44,7 +46,13 @@ type NodeTable []NodeEntry
 func hashString(elt string) *big.Int {
     hasher := sha1.New()
     hasher.Write([]byte(elt))
-    return new(big.Int).SetBytes(hasher.Sum(nil))
+    hash := new(big.Int).SetBytes(hasher.Sum(nil))
+    hashMod := new(big.Int).Exp(big.NewInt(2), big.NewInt(M), nil)
+    return new(big.Int).Mod(hash, hashMod)
+}
+
+func hashAddress(address NodeAddress) *big.Int {
+    return hashString(string(address))
 }
 
 //

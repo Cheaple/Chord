@@ -18,7 +18,8 @@ type Arguments struct {
 	FixFingerTime 	int     // Time in milliseconds between invocations of fix_finger.
 	CheckPredTime 	int     // Time in milliseconds between invocations of check_predecessor
 	CntSuccessors  	int		// Number of successors maintained by the Chord client
-	Identifier  	string  // Identifier
+	IdentifierStr  	string  // Identifier
+	Verbose			bool	// whether to print debugging logs
 }
 
 //
@@ -33,7 +34,8 @@ func ParseCmdArgs() (Arguments, error) {
 	var tff 		int
 	var tcp 		int   		
 	var r 			int     	
-	var i 			string  	
+	var i 			string
+	var v			bool
 
 	// Parse command line arguments
 	flag.StringVar(&a, "a", "localhost", "IP address that the Chord client will bind to, as well as advertise to other nodes. Represented as an ASCII string (e.g., 128.8.126.63). Must be specified.")
@@ -45,6 +47,7 @@ func ParseCmdArgs() (Arguments, error) {
 	flag.IntVar(&tcp, "tcp", 3000, "Time in milliseconds between invocations of ‘check predecessor’. Represented as a base-10 integer. Must be specified, with a value in the range of [1,60000].")
 	flag.IntVar(&r, "r", 3, "Number of successors maintained by the Chord client. Represented as a base-10 integer. Must be specified, with a value in the range of [1,32].")
 	flag.StringVar(&i, "i", "", "Identifier (ID) assigned to the Chord client which will override the ID computed by the SHA1 sum of the client’s IP address and port number. Represented as a string of 40 characters matching [0-9a-fA-F]. Optional parameter.")
+	flag.BoolVar(&v, "v", false, "Enable debug mode")
 	flag.Parse()
 
 	args := Arguments{
@@ -56,7 +59,8 @@ func ParseCmdArgs() (Arguments, error) {
 		FixFingerTime: 	tff,
 		CheckPredTime: 	tcp,
 		CntSuccessors:  r,
-		Identifier:  	i,
+		IdentifierStr:  i,
+		Verbose:		v,
 	}
 	err := validateArgs(args)
 	
@@ -91,8 +95,8 @@ func validateArgs(args Arguments) error {
 		return errors.New("Invalid argument -r")
 	}
 
-	if args.Identifier != "" {
-		matched, err := regexp.MatchString("[0-9a-fA-F]*", args.Identifier)
+	if args.IdentifierStr != "" {
+		matched, err := regexp.MatchString("[0-9a-fA-F]*", args.IdentifierStr)
 		if err != nil || !matched {
 			return errors.New("Invalid argument -i (identifier)")
 		}
