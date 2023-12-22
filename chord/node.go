@@ -43,8 +43,10 @@ func NewNode(args utils.Arguments) *Node {
 		node.Id = new(big.Int)
 		node.Id.SetString(args.IdentifierStr, 16)  // string of 16-bit int to big.Int
 	}
+	node.Entry = newNodeEntry(node.Id, node.Address)
+
 	node.FingerTable = node.newNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
-	node.Predecessor = nil
+	node.Predecessor = &NodeEntry{}  // empty
 	node.Successors = node.newNodeTable(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[Key]string)	
 
@@ -118,7 +120,7 @@ func NewNode(args utils.Arguments) *Node {
 //   This function itself do not comminicate with other nodes at all.		
 //   This node becomes a node of the Chord ring only after periodical stabilize().
 func (n *Node) joinChord(joinedAddress NodeAddress) error {
-	n.Predecessor = nil
+	n.Predecessor = &NodeEntry{}  // empty
 	n.Successors[1] = newNodeEntry(hashString(string(joinedAddress)), joinedAddress)
 	return nil
 }
@@ -136,7 +138,11 @@ func (n *Node) findSuccessor(id *big.Int) (*NodeEntry, error) {
 
 	pred := n.closestPreceding(id)
 
-	return findSuccessorRPC(pred, id)
+	res, err := n.findSuccessorRPC(pred, id)
+	if err != nil {
+		return nil, err
+	}
+	return newNodeEntryFromRPC(res), err
 }
 
 //
@@ -162,12 +168,19 @@ func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
 // Each node periodically calls stabilize
 // to learn about newly joined nodes
 //
-func (n *Node) stabilize() error {
-	// succ := n.Successors[1]
-
-
-
-	return nil
+func (n *Node) stabilize() {
+	succ := n.Successors[1]
+	succPred, err := n.findPredecessorRPC(succ)
+	if err != nil {
+		fmt.Println("Error stabilizing:", err)
+		return
+	}
+	pred := newNodeEntryFromRPC(succPred)
+	if nodeBetweenOpen(n.Entry, pred, succ) {
+		// if succPred in (n, succ)
+		n.Successors[1] = pred
+	}
+	// TODO: notify
 }
 
 //

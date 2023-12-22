@@ -30,9 +30,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChordClient interface {
 	// Get the target node's current predecessor
-	GetPredecessor(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*NodeEntry, error)
+	GetPredecessor(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeEntry, error)
 	// Get the target node's current successor
-	GetSuccessor(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*NodeEntry, error)
+	GetSuccessor(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeEntry, error)
 }
 
 type chordClient struct {
@@ -43,7 +43,7 @@ func NewChordClient(cc grpc.ClientConnInterface) ChordClient {
 	return &chordClient{cc}
 }
 
-func (c *chordClient) GetPredecessor(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*NodeEntry, error) {
+func (c *chordClient) GetPredecessor(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeEntry, error) {
 	out := new(NodeEntry)
 	err := c.cc.Invoke(ctx, Chord_GetPredecessor_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -52,7 +52,7 @@ func (c *chordClient) GetPredecessor(ctx context.Context, in *Empty, opts ...grp
 	return out, nil
 }
 
-func (c *chordClient) GetSuccessor(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*NodeEntry, error) {
+func (c *chordClient) GetSuccessor(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeEntry, error) {
 	out := new(NodeEntry)
 	err := c.cc.Invoke(ctx, Chord_GetSuccessor_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -66,19 +66,19 @@ func (c *chordClient) GetSuccessor(ctx context.Context, in *Empty, opts ...grpc.
 // for forward compatibility
 type ChordServer interface {
 	// Get the target node's current predecessor
-	GetPredecessor(context.Context, *Empty) (*NodeEntry, error)
+	GetPredecessor(context.Context, *EmptyMsg) (*NodeEntry, error)
 	// Get the target node's current successor
-	GetSuccessor(context.Context, *Empty) (*NodeEntry, error)
+	GetSuccessor(context.Context, *EmptyMsg) (*NodeEntry, error)
 }
 
 // UnimplementedChordServer should be embedded to have forward compatible implementations.
 type UnimplementedChordServer struct {
 }
 
-func (UnimplementedChordServer) GetPredecessor(context.Context, *Empty) (*NodeEntry, error) {
+func (UnimplementedChordServer) GetPredecessor(context.Context, *EmptyMsg) (*NodeEntry, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPredecessor not implemented")
 }
-func (UnimplementedChordServer) GetSuccessor(context.Context, *Empty) (*NodeEntry, error) {
+func (UnimplementedChordServer) GetSuccessor(context.Context, *EmptyMsg) (*NodeEntry, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSuccessor not implemented")
 }
 
@@ -94,7 +94,7 @@ func RegisterChordServer(s grpc.ServiceRegistrar, srv ChordServer) {
 }
 
 func _Chord_GetPredecessor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -106,13 +106,13 @@ func _Chord_GetPredecessor_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Chord_GetPredecessor_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).GetPredecessor(ctx, req.(*Empty))
+		return srv.(ChordServer).GetPredecessor(ctx, req.(*EmptyMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_GetSuccessor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func _Chord_GetSuccessor_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: Chord_GetSuccessor_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).GetSuccessor(ctx, req.(*Empty))
+		return srv.(ChordServer).GetSuccessor(ctx, req.(*EmptyMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }
