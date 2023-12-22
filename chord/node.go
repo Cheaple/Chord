@@ -119,17 +119,14 @@ func NewNode(args utils.Arguments) *Node {
 //   This node becomes a node of the Chord ring only after periodical stabilize().
 func (n *Node) joinChord(joinedAddress NodeAddress) error {
 	n.Predecessor = nil
-	n.Successors[1] = NodeEntry{
-		Identifier: hashString(string(joinedAddress)).Bytes(),
-		Address: joinedAddress,
-	}
+	n.Successors[1] = newNodeEntry(hashString(string(joinedAddress)), joinedAddress)
 	return nil
 }
 
 //
 // Find an identifier's successor in the Chord ring
 //
-func (n *Node) findSuccessor(id *big.Int) (NodeEntry, error) {
+func (n *Node) findSuccessor(id *big.Int) (*NodeEntry, error) {
 	n.DPrintf("findSuccessor(): id = %d", id)
 	succ := n.Successors[0]
 	succId := new(big.Int).SetBytes(succ.Identifier)
@@ -145,7 +142,7 @@ func (n *Node) findSuccessor(id *big.Int) (NodeEntry, error) {
 //
 // Search the local table for the highest predecessor of id
 //
-func (n *Node) closestPreceding(id *big.Int) NodeEntry {
+func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
 	n.DPrintf("closestPreceding(): id = %d", id)
 	for i := M; i > 0; i-- {
 		prec := n.FingerTable[i]

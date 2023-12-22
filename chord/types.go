@@ -18,9 +18,9 @@ type Node struct {
 	Id      	*big.Int 			// Hash(Address) -> Chord space Identifier
 
     Address    	NodeAddress         // local address
-    FingerTable	[]NodeEntry         // Finger Table
+    FingerTable	[]*NodeEntry        // Finger Table
     Predecessor	*NodeEntry          // Predecessor
-    Successors 	[]NodeEntry         // Successor List
+    Successors 	[]*NodeEntry        // Successor List
 
     Bucket 		map[Key]string      // Buckets to store files
 
@@ -40,7 +40,7 @@ type NodeEntry struct {
 // 	entry.Address = address
 // }
 
-type NodeTable []NodeEntry
+type NodeTable []*NodeEntry
 
 type GRPCService struct {
     server *grpc.Server
@@ -48,6 +48,27 @@ type GRPCService struct {
 
 /* ******************************************************************************* *
  * ********************************* Type Operations ***************************** */
+
+//
+// Init NodeEntry
+//
+func newNodeEntry(id *big.Int, address NodeAddress) *NodeEntry {
+	entry := &NodeEntry{}
+    copy(entry.Identifier, id.Bytes())
+    entry.Address = address
+    return entry
+}
+
+//
+// Init Finger Table or Successor List
+//
+func (n *Node) newNodeTable(size int) NodeTable {
+	tbl := make([]*NodeEntry, size)
+	for i := range tbl {
+		tbl[i] = newNodeEntry(n.Id, n.Address)
+	}
+	return tbl
+}
  
 func hashString(elt string) *big.Int {
     hasher := sha1.New()

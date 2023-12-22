@@ -104,8 +104,8 @@ func validateArgs(args Arguments) error {
 
 	if args.JoinAddress != "" {
 		// -ja is specified, validate -ja & -jp
-		if net.ParseIP(string(args.JoinAddress)) == nil && args.JoinAddress == "localhost" {
-			return errors.New("Invalid argument -ja (port for the joined node)")
+		if net.ParseIP(string(args.JoinAddress)) == nil && args.JoinAddress != "localhost" {
+			return errors.New("Invalid argument -ja (ip for the joined node)")
 		}
 		if args.JoinPort < 1024 || args.JoinPort > 65535 {
 			return errors.New("Invalid argument -jp (port for the joined node)")

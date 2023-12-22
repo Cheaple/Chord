@@ -10,14 +10,17 @@ PROTOC_DIR=$(CHORD_DIR)/rpc
 PROTOC_NAME=$(PROTOC_DIR)/chord.proto
 
 
-build:
+build: clean
 	$(PROTOC) --go_out=$(CHORD_DIR) --go-grpc_out=require_unimplemented_servers=false:$(CHORD_DIR) $(PROTOC_NAME) 
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_NAME)
 
-test:
+test: build
 	$(BINARY_NAME) -a localhost -p 8001 --ts 3000 --tff 1000 --tcp 3000 -r 4
+
+test2:
+	$(BINARY_NAME) -a localhost -p 8002 --ja localhost --jp 8001 --ts 3000 --tff 1000 --tcp 3000 -r 4
 
 clean:
 	rm -f $(BINARY_NAME)
 
-default: clean build test
+default: test

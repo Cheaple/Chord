@@ -15,8 +15,8 @@ import (
 
 func (n *Node) StartRPCService() {
 	server := grpc.NewServer()
-	// rpc.RegisterChordServer(server, &rpc.NodeEntry{Id: n.Id.Bytes(), Address: string(n.Address)})
 	rpc.RegisterChordServer(server, n)
+	n.rpcService.server = server
 
 	// Start server at the node's address
 	listener, err := net.Listen("tcp", string(n.Address))
@@ -24,11 +24,7 @@ func (n *Node) StartRPCService() {
 		log.Fatalf("Error listening at %s: %v", n.Address, err)
 	}
 	fmt.Println("Chord node starts listening at %s", n.Address)
-	if err := server.Serve(listener); err != nil {
-		log.Fatalf("Error serving: %v", err)
-	}
-
-	n.rpcService.server = server
+	go server.Serve(listener)
 }
 
 
@@ -36,16 +32,16 @@ func (n *Node) StartRPCService() {
 // Find the successor node of a given ID in the Chord ring
 // starting searching from a give address
 //
-func findSuccessorRPC(ety NodeEntry, id *big.Int) (NodeEntry, error) {
+func findSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 	
 	
-	return NodeEntry{}, nil
+	return nil, nil
 }
 
-func findPredecessorRPC(ety NodeEntry) (NodeEntry, error) {
+func findPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 
 
-	return NodeEntry{}, nil
+	return nil, nil
 }
 
 /* ******************************************************************************* *
