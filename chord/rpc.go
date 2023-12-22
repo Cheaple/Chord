@@ -9,13 +9,11 @@ import (
 	"log"
 	"math/big"
 	"net"
-
-	"chord/chord/rpc"
 )
 
 func (n *Node) StartRPCService() {
 	server := grpc.NewServer()
-	rpc.RegisterChordServer(server, n)
+	RegisterChordServer(server, n)
 	n.rpcService.server = server
 
 	// Start server at the node's address
@@ -32,14 +30,14 @@ func (n *Node) StartRPCService() {
 // Find the successor node of a given ID in the Chord ring
 // starting searching from a give address
 //
-func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*rpc.NodeEntry, error) {
+func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 	conn, err := grpc.Dial(string(ety.Address))
 	if err != nil {
 		return nil, err
 	}
-	client := rpc.NewChordClient(conn)
+	client := NewChordClient(conn)
 
-	req := &rpc.EmptyMsg{}
+	req := &EmptyMsg{}
 	ctx := context.Background()
 	return client.GetSuccessor(ctx, req)
 }
@@ -47,14 +45,14 @@ func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*rpc.NodeEntry, er
 //
 // Find the predecessor node of the given node 
 //
-func (n *Node) findPredecessorRPC(ety *NodeEntry) (*rpc.NodeEntry, error) {
+func (n *Node) findPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 	conn, err := grpc.Dial(string(ety.Address))
 	if err != nil {
 		return nil, err
 	}
-	client := rpc.NewChordClient(conn)
+	client := NewChordClient(conn)
 
-	req := &rpc.EmptyMsg{}
+	req := &EmptyMsg{}
 	ctx := context.Background()
 	return client.GetPredecessor(ctx, req)
 }
@@ -62,10 +60,10 @@ func (n *Node) findPredecessorRPC(ety *NodeEntry) (*rpc.NodeEntry, error) {
 /* ******************************************************************************* *
  * ************************* RPC Interface Implementaiton************************* */
 
-func (n *Node) GetPredecessor(ctx context.Context, in *rpc.EmptyMsg) (*rpc.NodeEntry, error) {
-	return n.Predecessor.toRPC(), nil
+func (n *Node) GetPredecessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
+	return n.Predecessor, nil
 }
 
-func (n *Node) GetSuccessor(ctx context.Context, in *rpc.EmptyMsg) (*rpc.NodeEntry, error) {
-	return n.Successors[1].toRPC(), nil
+func (n *Node) GetSuccessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
+	return n.Successors[1], nil
 }

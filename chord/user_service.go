@@ -22,7 +22,11 @@ import (
 func (n *Node) Print() {
 	fmt.Println("Node Address:", n.Address)
 	fmt.Println("Node Identifier:", new(big.Int).SetBytes(n.Id.Bytes()))
-	fmt.Println("Node Predecessor:", n.Predecessor)
+	if n.Predecessor.empty() {
+		fmt.Println("Node Predecessor: nil")
+	} else {
+		fmt.Println("Node Predecessor:", new(big.Int).SetBytes(n.Predecessor.Identifier))
+	}
 
 	fmt.Println("------ Successor List ------")
 	fmt.Println("Successors  |  Identifier  |  Address ")

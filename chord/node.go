@@ -138,11 +138,7 @@ func (n *Node) findSuccessor(id *big.Int) (*NodeEntry, error) {
 
 	pred := n.closestPreceding(id)
 
-	res, err := n.findSuccessorRPC(pred, id)
-	if err != nil {
-		return nil, err
-	}
-	return newNodeEntryFromRPC(res), err
+	return n.findSuccessorRPC(pred, id)
 }
 
 //
@@ -175,10 +171,9 @@ func (n *Node) stabilize() {
 		fmt.Println("Error stabilizing:", err)
 		return
 	}
-	pred := newNodeEntryFromRPC(succPred)
-	if nodeBetweenOpen(n.Entry, pred, succ) {
+	if nodeBetweenOpen(n.Entry, succPred, succ) {
 		// if succPred in (n, succ)
-		n.Successors[1] = pred
+		n.Successors[1] = succPred
 	}
 	// TODO: notify
 }

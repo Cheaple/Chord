@@ -4,9 +4,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.12.4
-// source: chord/rpc/chord.proto
+// source: chord/chord.proto
 
-package rpc
+package chord
 
 import (
 	context "context"
@@ -146,5 +146,5 @@ var Chord_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "chord/rpc/chord.proto",
+	Metadata: "chord/chord.proto",
 }

@@ -4,9 +4,9 @@
 // versions:
 // 	protoc-gen-go v1.31.0
 // 	protoc        v3.12.4
-// source: chord/rpc/chord.proto
+// source: chord/chord.proto
 
-package rpc
+package chord
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -31,7 +31,7 @@ type EmptyMsg struct {
 func (x *EmptyMsg) Reset() {
 	*x = EmptyMsg{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_chord_rpc_chord_proto_msgTypes[0]
+		mi := &file_chord_chord_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -44,7 +44,7 @@ func (x *EmptyMsg) String() string {
 func (*EmptyMsg) ProtoMessage() {}
 
 func (x *EmptyMsg) ProtoReflect() protoreflect.Message {
-	mi := &file_chord_rpc_chord_proto_msgTypes[0]
+	mi := &file_chord_chord_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *EmptyMsg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmptyMsg.ProtoReflect.Descriptor instead.
 func (*EmptyMsg) Descriptor() ([]byte, []int) {
-	return file_chord_rpc_chord_proto_rawDescGZIP(), []int{0}
+	return file_chord_chord_proto_rawDescGZIP(), []int{0}
 }
 
 type NodeEntry struct {
@@ -72,7 +72,7 @@ type NodeEntry struct {
 func (x *NodeEntry) Reset() {
 	*x = NodeEntry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_chord_rpc_chord_proto_msgTypes[1]
+		mi := &file_chord_chord_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -85,7 +85,7 @@ func (x *NodeEntry) String() string {
 func (*NodeEntry) ProtoMessage() {}
 
 func (x *NodeEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_chord_rpc_chord_proto_msgTypes[1]
+	mi := &file_chord_chord_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -98,7 +98,7 @@ func (x *NodeEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeEntry.ProtoReflect.Descriptor instead.
 func (*NodeEntry) Descriptor() ([]byte, []int) {
-	return file_chord_rpc_chord_proto_rawDescGZIP(), []int{1}
+	return file_chord_chord_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *NodeEntry) GetIdentifier() []byte {
@@ -115,43 +115,43 @@ func (x *NodeEntry) GetAddress() string {
 	return ""
 }
 
-var File_chord_rpc_chord_proto protoreflect.FileDescriptor
+var File_chord_chord_proto protoreflect.FileDescriptor
 
-var file_chord_rpc_chord_proto_rawDesc = []byte{
-	0x0a, 0x15, 0x63, 0x68, 0x6f, 0x72, 0x64, 0x2f, 0x72, 0x70, 0x63, 0x2f, 0x63, 0x68, 0x6f, 0x72,
-	0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x0a, 0x0a, 0x08, 0x45, 0x6d, 0x70, 0x74, 0x79,
-	0x4d, 0x73, 0x67, 0x22, 0x45, 0x0a, 0x09, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79,
-	0x12, 0x1e, 0x0a, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0c, 0x52, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72,
-	0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x32, 0x57, 0x0a, 0x05, 0x43, 0x68,
-	0x6f, 0x72, 0x64, 0x12, 0x27, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x50, 0x72, 0x65, 0x64, 0x65, 0x63,
-	0x65, 0x73, 0x73, 0x6f, 0x72, 0x12, 0x09, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67,
-	0x1a, 0x0a, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x25, 0x0a, 0x0c,
-	0x47, 0x65, 0x74, 0x53, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72, 0x12, 0x09, 0x2e, 0x45,
-	0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67, 0x1a, 0x0a, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e,
-	0x74, 0x72, 0x79, 0x42, 0x07, 0x5a, 0x05, 0x2e, 0x2f, 0x72, 0x70, 0x63, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+var file_chord_chord_proto_rawDesc = []byte{
+	0x0a, 0x11, 0x63, 0x68, 0x6f, 0x72, 0x64, 0x2f, 0x63, 0x68, 0x6f, 0x72, 0x64, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x22, 0x0a, 0x0a, 0x08, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67, 0x22,
+	0x45, 0x0a, 0x09, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x1e, 0x0a, 0x0a,
+	0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x0a, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x12, 0x18, 0x0a, 0x07,
+	0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x32, 0x57, 0x0a, 0x05, 0x43, 0x68, 0x6f, 0x72, 0x64, 0x12,
+	0x27, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x50, 0x72, 0x65, 0x64, 0x65, 0x63, 0x65, 0x73, 0x73, 0x6f,
+	0x72, 0x12, 0x09, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67, 0x1a, 0x0a, 0x2e, 0x4e,
+	0x6f, 0x64, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x25, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x53,
+	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72, 0x12, 0x09, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
+	0x4d, 0x73, 0x67, 0x1a, 0x0a, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x42,
+	0x09, 0x5a, 0x07, 0x2e, 0x2f, 0x63, 0x68, 0x6f, 0x72, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
-	file_chord_rpc_chord_proto_rawDescOnce sync.Once
-	file_chord_rpc_chord_proto_rawDescData = file_chord_rpc_chord_proto_rawDesc
+	file_chord_chord_proto_rawDescOnce sync.Once
+	file_chord_chord_proto_rawDescData = file_chord_chord_proto_rawDesc
 )
 
-func file_chord_rpc_chord_proto_rawDescGZIP() []byte {
-	file_chord_rpc_chord_proto_rawDescOnce.Do(func() {
-		file_chord_rpc_chord_proto_rawDescData = protoimpl.X.CompressGZIP(file_chord_rpc_chord_proto_rawDescData)
+func file_chord_chord_proto_rawDescGZIP() []byte {
+	file_chord_chord_proto_rawDescOnce.Do(func() {
+		file_chord_chord_proto_rawDescData = protoimpl.X.CompressGZIP(file_chord_chord_proto_rawDescData)
 	})
-	return file_chord_rpc_chord_proto_rawDescData
+	return file_chord_chord_proto_rawDescData
 }
 
-var file_chord_rpc_chord_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_chord_rpc_chord_proto_goTypes = []interface{}{
+var file_chord_chord_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_chord_chord_proto_goTypes = []interface{}{
 	(*EmptyMsg)(nil),  // 0: EmptyMsg
 	(*NodeEntry)(nil), // 1: NodeEntry
 }
-var file_chord_rpc_chord_proto_depIdxs = []int32{
+var file_chord_chord_proto_depIdxs = []int32{
 	0, // 0: Chord.GetPredecessor:input_type -> EmptyMsg
 	0, // 1: Chord.GetSuccessor:input_type -> EmptyMsg
 	1, // 2: Chord.GetPredecessor:output_type -> NodeEntry
@@ -163,13 +163,13 @@ var file_chord_rpc_chord_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_chord_rpc_chord_proto_init() }
-func file_chord_rpc_chord_proto_init() {
-	if File_chord_rpc_chord_proto != nil {
+func init() { file_chord_chord_proto_init() }
+func file_chord_chord_proto_init() {
+	if File_chord_chord_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_chord_rpc_chord_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_chord_chord_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*EmptyMsg); i {
 			case 0:
 				return &v.state
@@ -181,7 +181,7 @@ func file_chord_rpc_chord_proto_init() {
 				return nil
 			}
 		}
-		file_chord_rpc_chord_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_chord_chord_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NodeEntry); i {
 			case 0:
 				return &v.state
@@ -198,18 +198,18 @@ func file_chord_rpc_chord_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_chord_rpc_chord_proto_rawDesc,
+			RawDescriptor: file_chord_chord_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_chord_rpc_chord_proto_goTypes,
-		DependencyIndexes: file_chord_rpc_chord_proto_depIdxs,
-		MessageInfos:      file_chord_rpc_chord_proto_msgTypes,
+		GoTypes:           file_chord_chord_proto_goTypes,
+		DependencyIndexes: file_chord_chord_proto_depIdxs,
+		MessageInfos:      file_chord_chord_proto_msgTypes,
 	}.Build()
-	File_chord_rpc_chord_proto = out.File
-	file_chord_rpc_chord_proto_rawDesc = nil
-	file_chord_rpc_chord_proto_goTypes = nil
-	file_chord_rpc_chord_proto_depIdxs = nil
+	File_chord_chord_proto = out.File
+	file_chord_chord_proto_rawDesc = nil
+	file_chord_chord_proto_goTypes = nil
+	file_chord_chord_proto_depIdxs = nil
 }
