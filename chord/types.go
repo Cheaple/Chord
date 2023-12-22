@@ -2,6 +2,7 @@ package chord
 
 import (
 	"crypto/sha1"
+    "google.golang.org/grpc"
 	"math/big"
 )
 
@@ -13,18 +14,19 @@ type Key string
 type NodeAddress string
 
 type Node struct {
-	// Name       	string   			// Name: IP:Port or User specified Name. Exp: [N]14
-	Id      	*big.Int 			    // Hash(Address) -> Chord space Identifier
+	// Name       	string   		// Name: IP:Port or User specified Name. Exp: [N]14
+	Id      	*big.Int 			// Hash(Address) -> Chord space Identifier
 
-    Address    	NodeAddress
-    FingerTable	[]NodeEntry
-    Predecessor	NodeAddress
-    Successors 	[]NodeEntry
+    Address    	NodeAddress         // local address
+    FingerTable	[]NodeEntry         // Finger Table
+    Predecessor	*NodeEntry          // Predecessor
+    Successors 	[]NodeEntry         // Successor List
 
-    Bucket 		map[Key]string
+    Bucket 		map[Key]string      // Buckets to store files
 
-	doneCh		chan struct{}
+    rpcService  GRPCService         // Service for communications between Chord nodes
 
+	doneCh		chan struct{}       // channel to notify sub-routines to shutdown
     verbose     bool                // whether to print log
 }
 
@@ -39,6 +41,10 @@ type NodeEntry struct {
 // }
 
 type NodeTable []NodeEntry
+
+type GRPCService struct {
+    server *grpc.Server
+}   
 
 /* ******************************************************************************* *
  * ********************************* Type Operations ***************************** */

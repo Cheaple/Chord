@@ -17,7 +17,7 @@ import (
 //
 // Init Finger Table or Successor List
 //
-func (n *Node) makeNodeTable(size int) NodeTable {
+func (n *Node) newNodeTable(size int) NodeTable {
 	tbl := make([]NodeEntry, size)
 
 	for i := range tbl {

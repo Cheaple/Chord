@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"os"
+	// "os"
 	"time"
 
 	"chord/utils"
@@ -30,7 +30,7 @@ func (n *Node) DPrintf(args ...interface{}) {
 // Create a new Chord n,
 // and create or join a Chord ring
 //
-func MakeNode(args utils.Arguments) *Node {
+func NewNode(args utils.Arguments) *Node {
 	node := &Node{
 		doneCh: make(chan struct{}),
 		verbose: args.Verbose,
@@ -43,24 +43,26 @@ func MakeNode(args utils.Arguments) *Node {
 		node.Id = new(big.Int)
 		node.Id.SetString(args.IdentifierStr, 16)  // string of 16-bit int to big.Int
 	}
-	node.FingerTable = node.makeNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
-	node.Predecessor = ""
-	node.Successors = node.makeNodeTable(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
+	node.FingerTable = node.newNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
+	node.Predecessor = nil
+	node.Successors = node.newNodeTable(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[Key]string)	
 
 	// Join or Create a Chord ring
 	if args.JoinAddress != "" {
 		joinAddress := NodeAddress(fmt.Sprintf("%s:%d", args.JoinAddress, args.JoinPort))
 		fmt.Println("Joining a Chord ring at node", joinAddress)
-		err := node.join(joinAddress)
+		err := node.joinChord(joinAddress)
 		if err != nil {
-			fmt.Println("Error joining the Chord ring:", err)
-			os.Exit(1)
+			log.Fatal("Error joining the Chord ring:", err)
 		}
 	} else {
 		fmt.Println("Creating a new Chord ring at node", node.Address)
 		// node.create()
 	}
+
+	// Start RPC service to communicate with other Chord nodes
+	node.StartRPCService()
 
 	// Periodically stabilize
 	go func() {
@@ -108,19 +110,15 @@ func MakeNode(args utils.Arguments) *Node {
 	return node
 }
 
-// //
-// // Create a new Chord ring
-// //
-// func (n *Node) create() {
-// 	n.Predecessor = ""
-// 	// n.Predecessor = n.Address
-// }
 
 //
 // Join an old Chord ring that contains a node at joinedAddress
-//
-func (n *Node) join(joinedAddress NodeAddress) error {
-	n.Predecessor = ""
+// Note: 
+//   This function is different from the paper Fig.6. join(). 
+//   This function itself do not comminicate with other nodes at all.		
+//   This node becomes a node of the Chord ring only after periodical stabilize().
+func (n *Node) joinChord(joinedAddress NodeAddress) error {
+	n.Predecessor = nil
 	n.Successors[1] = NodeEntry{
 		Identifier: hashString(string(joinedAddress)).Bytes(),
 		Address: joinedAddress,
@@ -141,7 +139,7 @@ func (n *Node) findSuccessor(id *big.Int) (NodeEntry, error) {
 
 	pred := n.closestPreceding(id)
 
-	return n.findSuccessorRPC(pred, id)
+	return findSuccessorRPC(pred, id)
 }
 
 //
@@ -168,6 +166,8 @@ func (n *Node) closestPreceding(id *big.Int) NodeEntry {
 // to learn about newly joined nodes
 //
 func (n *Node) stabilize() error {
+	// succ := n.Successors[1]
+
 
 
 	return nil

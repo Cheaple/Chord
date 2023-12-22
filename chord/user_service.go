@@ -1,5 +1,10 @@
 package chord
 
+/*
+ * For user operations
+ * e.g. LookUp, StoreFile, GetFile, Quit
+ */
+
 import (
 	"fmt"
 	// "log"
@@ -9,7 +14,7 @@ import (
 
 
 /* ******************************************************************************* *
- * ******************************** Client Operations **************************** */
+ * ********************************* User Operations ***************************** */
 
 //
 // Print current state

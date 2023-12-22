@@ -93,10 +93,9 @@ func main() {
 	// Parse command line arguments
 	args, err := utils.ParseCmdArgs()
 	if err != nil {
-		fmt.Println("Error parsing arguments: ", err)
-		os.Exit(1)
+		log.Fatal("Error parsing arguments: ", err)
 	}
 
-	node := chord.MakeNode(args)
+	node := chord.NewNode(args)
 	runChordClient(node)	
 }
