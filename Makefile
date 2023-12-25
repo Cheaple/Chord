@@ -15,10 +15,10 @@ build: clean
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_NAME)
 
 test: build
-	$(BINARY_NAME) -a localhost -p 8001 --ts 3000 --tff 1000 --tcp 3000 -r 4
+	$(BINARY_NAME) -a localhost -p 8001 --ts 3000 --tff 1000 --tcp 3000 -r 4 -v
 
 test2:
-	$(BINARY_NAME) -a localhost -p 8002 --ja localhost --jp 8001 --ts 3000 --tff 1000 --tcp 3000 -r 4
+	$(BINARY_NAME) -a localhost -p 8002 --ja localhost --jp 8001 --ts 3000 --tff 1000 --tcp 3000 -r 4 -v
 
 clean:
 	rm -f $(BINARY_NAME)

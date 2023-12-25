@@ -32,6 +32,10 @@ func (n *Node) Print() {
 	fmt.Println("Successors  |  Identifier  |  Address ")
 	for i := 1; i < len(n.Successors); i++ {
 		entry := n.Successors[i]
+		if entry.empty() {
+			fmt.Printf("%10d  |              |\n", i)
+			continue
+		}
 		id := new(big.Int).SetBytes(entry.Identifier)
 		address := entry.Address
 		fmt.Printf("%10d  |  %10d  |  %s\n", i, id, address)
@@ -41,6 +45,10 @@ func (n *Node) Print() {
 	fmt.Println("    Finger  |  Identifier  |  Address ")
 	for i := 1; i < len(n.FingerTable); i++ {
 		entry := n.FingerTable[i]
+		if entry.empty() {
+			fmt.Printf("%10d  |              |\n", i)
+			continue
+		}
 		id := new(big.Int).SetBytes(entry.Identifier)
 		address := entry.Address
 		fmt.Printf("%10d  |  %10d  |  %s\n", i, id, address)

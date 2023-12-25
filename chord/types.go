@@ -74,6 +74,7 @@ func (n *Node) newNodeTable(size int) NodeTable {
 	tbl := make([]*NodeEntry, size)
 	for i := range tbl {
 		tbl[i] = n.Entry
+        // tbl[i] = &NodeEntry{}
 	}
 	return tbl
 }
@@ -109,6 +110,10 @@ func between(start, elt, end *big.Int, inclusive bool) bool {
 // Return true if elt in (start, end)
 //
 func nodeBetweenOpen(start, elt, end *NodeEntry) bool {
+    if elt.empty() {
+        return false
+    }
+
     left := new(big.Int).SetBytes(start.Identifier)
     mid := new(big.Int).SetBytes(elt.Identifier)
     right := new(big.Int).SetBytes(end.Identifier)
@@ -119,6 +124,10 @@ func nodeBetweenOpen(start, elt, end *NodeEntry) bool {
 // Return true if elt in (start, end]
 //
 func nodeBetweenClosed(start, elt, end *NodeEntry) bool {
+    if elt.empty() {
+        return false
+    }
+    
     left := new(big.Int).SetBytes(start.Identifier)
     mid := new(big.Int).SetBytes(elt.Identifier)
     right := new(big.Int).SetBytes(end.Identifier)

@@ -31,7 +31,8 @@ func (n *Node) StartRPCService() {
 // starting searching from a give address
 //
 func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
-	conn, err := grpc.Dial(string(ety.Address))
+	n.DPrintf("findSuccessorRPC(): target address = %s", string(ety.Address))
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,8 @@ func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error)
 // Find the predecessor node of the given node 
 //
 func (n *Node) findPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
-	conn, err := grpc.Dial(string(ety.Address))
+	n.DPrintf("findPredecessorRPC(): target node = %s", ety.Address)
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -61,9 +63,11 @@ func (n *Node) findPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
  * ************************* RPC Interface Implementaiton************************* */
 
 func (n *Node) GetPredecessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
+	n.DPrintf("GetPredecessor()")
 	return n.Predecessor, nil
 }
 
 func (n *Node) GetSuccessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
+	n.DPrintf("GetSuccessor()")
 	return n.Successors[1], nil
 }

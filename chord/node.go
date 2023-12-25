@@ -14,12 +14,13 @@ import (
 //
 //  Helper function for printng debugging logs
 //
-func (n *Node) DPrintf(args ...interface{}) {
+func (n *Node) DPrintf(str string, args ...interface{}) {
 	if n.verbose != true {
 		return
 	}
-	message := fmt.Sprint(args...)
-	log.Println(fmt.Sprintf("----- node-%d () %s -----", n.Id, n.Address, message))
+	message := fmt.Sprintf(str, args...)
+	fmt.Println()
+	log.Printf(fmt.Sprintf("--- node-%d: %s ---", n.Id, message))
 }
 
 
@@ -116,12 +117,21 @@ func NewNode(args utils.Arguments) *Node {
 //
 // Join an old Chord ring that contains a node at joinedAddress
 // Note: 
-//   This function is different from the paper Fig.6. join(). 
 //   This function itself do not comminicate with other nodes at all.		
 //   This node becomes a node of the Chord ring only after periodical stabilize().
 func (n *Node) joinChord(joinedAddress NodeAddress) error {
+	// Target Chord ring
+	target := newNodeEntry(hashString(string(joinedAddress)), joinedAddress)
+
 	n.Predecessor = &NodeEntry{}  // empty
-	n.Successors[1] = newNodeEntry(hashString(string(joinedAddress)), joinedAddress)
+
+	// Find the successor of this node in the target Chord ring
+	succ, err := n.findSuccessorRPC(target, n.Id)
+	if err != nil {
+		return err
+	}
+	n.Successors[1] = succ
+
 	return nil
 }
 
@@ -165,12 +175,22 @@ func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
 // to learn about newly joined nodes
 //
 func (n *Node) stabilize() {
+	n.DPrintf("stabilize()")
+
 	succ := n.Successors[1]
+	if succ.empty() || succ == n.Entry {
+		return
+	}
+
 	succPred, err := n.findPredecessorRPC(succ)
 	if err != nil {
 		fmt.Println("Error stabilizing:", err)
 		return
 	}
+	if succPred.empty() {
+		return
+	}
+
 	if nodeBetweenOpen(n.Entry, succPred, succ) {
 		// if succPred in (n, succ)
 		n.Successors[1] = succPred
