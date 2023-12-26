@@ -8,6 +8,7 @@ import (
 
 
 const M = 7  // m-bit identifier
+var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(M), nil)
 
 type Key string
 
@@ -84,7 +85,6 @@ func hashString(elt string) *big.Int {
     hasher := sha1.New()
     hasher.Write([]byte(elt))
     hash := new(big.Int).SetBytes(hasher.Sum(nil))
-    hashMod := new(big.Int).Exp(big.NewInt(2), big.NewInt(M), nil)
     return new(big.Int).Mod(hash, hashMod)
 }
 

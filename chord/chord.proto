@@ -17,4 +17,10 @@ service Chord {
 
     // Get the target node's current successor
     rpc GetSuccessor(EmptyMsg) returns (NodeEntry);
+
+    // Set the target node's predecessor (for notify() function in the paper)
+    rpc SetPredecessor(NodeEntry) returns (EmptyMsg);
+
+    // Cbeck failure (for check_predecessor() fuunction in the paper)
+    rpc Check(EmptyMsg) returns (EmptyMsg);
 }

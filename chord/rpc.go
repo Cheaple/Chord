@@ -25,12 +25,14 @@ func (n *Node) StartRPCService() {
 	go server.Serve(listener)
 }
 
+/* ******************************************************************************* *
+ * *********************************** RPC Calls ********************************* */
 
 //
 // Find the successor node of a given ID in the Chord ring
 // starting searching from a give address
 //
-func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
+func (n *Node) GetSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 	n.DPrintf("findSuccessorRPC(): target address = %s", string(ety.Address))
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
@@ -46,7 +48,7 @@ func (n *Node) findSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error)
 //
 // Find the predecessor node of the given node 
 //
-func (n *Node) findPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
+func (n *Node) GetPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 	n.DPrintf("findPredecessorRPC(): target node = %s", ety.Address)
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
@@ -59,8 +61,42 @@ func (n *Node) findPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 	return client.GetPredecessor(ctx, req)
 }
 
+//
+// Notify the given node to set a new predecessor
+//
+func (n *Node) NotifyRPC(ety *NodeEntry) (*EmptyMsg, error) {
+	n.DPrintf("NotifyRPC(): target node = %s", ety.Address)
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	client := NewChordClient(conn)
+
+	req := n.Entry
+	ctx := context.Background()
+	return client.SetPredecessor(ctx, req)
+}
+
+//
+// Check whether the predecessor fails
+//
+func (n *Node) CheckRPC(ety *NodeEntry) (*EmptyMsg, error) {
+	n.DPrintf("CheckRPC(): target node = %s", ety.Address)
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	client := NewChordClient(conn)
+
+	req := &EmptyMsg{}
+	ctx := context.Background()
+	return client.Check(ctx, req)
+}
+
 /* ******************************************************************************* *
- * ************************* RPC Interface Implementaiton************************* */
+ * ******************************* RPC Responses ********************************* */
+
+// When receiving RPC calls, nodes run the following functions to generate RPC responses
 
 func (n *Node) GetPredecessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
 	n.DPrintf("GetPredecessor()")
@@ -71,3 +107,17 @@ func (n *Node) GetSuccessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, erro
 	n.DPrintf("GetSuccessor()")
 	return n.Successors[1], nil
 }
+
+func (n *Node) SetPredecessor(ctx context.Context, pred *NodeEntry) (*EmptyMsg, error) {
+	n.DPrintf("SetPredecessor(): %+v", pred)
+	if n.Predecessor.empty() || nodeBetweenOpen(n.Predecessor, pred, n.Entry) {
+		n.DPrintf("SetPredecessor(): set predecessor = %s", pred.Address)
+		n.Predecessor = pred
+	}
+	return &EmptyMsg{}, nil
+}
+
+func (n *Node) Check(ctx context.Context, in *EmptyMsg) (*EmptyMsg, error) {
+	n.DPrintf("Check()")
+	return &EmptyMsg{}, nil
+} 

@@ -47,7 +47,7 @@ func NewNode(args utils.Arguments) *Node {
 	node.Entry = newNodeEntry(node.Id, node.Address)
 
 	node.FingerTable = node.newNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
-	node.Predecessor = &NodeEntry{}  // empty
+	node.Predecessor = &NodeEntry{}  // set empty node entry
 	node.Successors = node.newNodeTable(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[Key]string)	
 
@@ -83,7 +83,8 @@ func NewNode(args utils.Arguments) *Node {
 
 	// Periodically fix finger tables
 	go func() {
-		next := 0
+		var next int64
+		next = 0
 		ticker := time.NewTicker(time.Duration(args.FixFingerTime) * time.Millisecond)
 		for {
 			select {
@@ -119,14 +120,15 @@ func NewNode(args utils.Arguments) *Node {
 // Note: 
 //   This function itself do not comminicate with other nodes at all.		
 //   This node becomes a node of the Chord ring only after periodical stabilize().
+//
 func (n *Node) joinChord(joinedAddress NodeAddress) error {
 	// Target Chord ring
 	target := newNodeEntry(hashString(string(joinedAddress)), joinedAddress)
 
-	n.Predecessor = &NodeEntry{}  // empty
+	n.Predecessor = &NodeEntry{}  // set empty node entry
 
 	// Find the successor of this node in the target Chord ring
-	succ, err := n.findSuccessorRPC(target, n.Id)
+	succ, err := n.GetSuccessorRPC(target, n.Id)
 	if err != nil {
 		return err
 	}
@@ -140,15 +142,16 @@ func (n *Node) joinChord(joinedAddress NodeAddress) error {
 //
 func (n *Node) findSuccessor(id *big.Int) (*NodeEntry, error) {
 	n.DPrintf("findSuccessor(): id = %d", id)
-	succ := n.Successors[0]
+	succ := n.Successors[1]
 	succId := new(big.Int).SetBytes(succ.Identifier)
 	if between(n.Id, id, succId, true) {
+		// target id in (n, n.successor]
 		return succ, nil
 	}
 
 	pred := n.closestPreceding(id)
 
-	return n.findSuccessorRPC(pred, id)
+	return n.GetSuccessorRPC(pred, id)
 }
 
 //
@@ -177,40 +180,57 @@ func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
 func (n *Node) stabilize() {
 	n.DPrintf("stabilize()")
 
+	// Find the successor's current predecessor
 	succ := n.Successors[1]
-	if succ.empty() || succ == n.Entry {
-		return
-	}
-
-	succPred, err := n.findPredecessorRPC(succ)
+	succPred, err := n.GetPredecessorRPC(succ)
 	if err != nil {
 		fmt.Println("Error stabilizing:", err)
 		return
 	}
-	if succPred.empty() {
-		return
-	}
-
+	
+	// Update the successor
 	if nodeBetweenOpen(n.Entry, succPred, succ) {
 		// if succPred in (n, succ)
 		n.Successors[1] = succPred
+		// TODO: update successor list
 	}
-	// TODO: notify
+
+	// Notify the successor to update its predecessor
+	_, err = n.NotifyRPC(n.Successors[1])
+	if err != nil {
+		fmt.Println("Error notifying:", err)
+	}
 }
 
 //
 // Each node periodically calls fix fingers to 
 // make sure its finger table entries are correct
+// new nodes initialize their finger tables
+// existing nodes incorporate new nodes into their finger tables
 //
 // paras:
 // 	next: stores the index of the next finger to fix
 //
-func (n *Node) fixFinger(next int) int {
-	// new nodes initialize their finger tables
-	// existing nodes incorporate new nodes into their finger tables
-	
+func (n *Node) fixFinger(next int64) int64 {
+	next = next % M + 1  // next in [1, M]
 
-	return 0
+	// next finger's id = n.id + 2 ^ next
+	cur := new(big.Int).Set(n.Id)
+	add := new(big.Int).Exp(big.NewInt(2), big.NewInt(next - 1), nil)
+	nextId := new(big.Int).Add(cur, add)
+	nextId = new(big.Int).Mod(nextId, hashMod)
+	n.DPrintf("fixFinger(): next id = %d", nextId)
+
+	// Find a successor node that stores the next finger id
+	finger, err := n.findSuccessor(nextId)
+	if err != nil || finger == nil {
+		fmt.Println("Error fixing finger table:", err)
+	}
+
+	// Update finger entry
+	n.FingerTable[next] = finger
+	n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
+	return next
 }
 
 //
@@ -219,6 +239,13 @@ func (n *Node) fixFinger(next int) int {
 // to accept a new predecessor in notify
 //
 func (n *Node) checkPredecessor() error {
-
+	if n.Predecessor.empty() {
+		return nil
+	}
+	_, err := n.CheckRPC(n.Predecessor)
+	if err != nil {
+		n.DPrintf("checkPredecessor(): set n.predecessor = nil")
+		n.Predecessor = &NodeEntry{}  // set empty node entry
+	}
 	return nil
 }
