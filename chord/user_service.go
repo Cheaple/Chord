@@ -30,8 +30,8 @@ func (n *Node) Print() {
 
 	fmt.Println("------ Successor List ------")
 	fmt.Println("Successors  |  Identifier  |  Address ")
-	for i := 1; i < len(n.Successors); i++ {
-		entry := n.Successors[i]
+	for i := 1; i < len(n.Successors.Entries); i++ {
+		entry := n.Successors.get(i)
 		if entry.empty() {
 			fmt.Printf("%10d  |              |\n", i)
 			continue
@@ -43,8 +43,8 @@ func (n *Node) Print() {
 	
 	fmt.Println("------ Finger Table ------")
 	fmt.Println("    Finger  |  Identifier  |  Address ")
-	for i := 1; i < len(n.FingerTable); i++ {
-		entry := n.FingerTable[i]
+	for i := 1; i < M + 1; i++ {
+		entry := n.FingerTable.get(i)
 		if entry.empty() {
 			fmt.Printf("%10d  |              |\n", i)
 			continue

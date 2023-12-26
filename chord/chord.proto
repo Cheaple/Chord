@@ -6,21 +6,32 @@ option go_package = "./chord";
 
 message EmptyMsg {}
 
+message Id {
+    bytes identifier = 1;
+}
+
 message NodeEntry {
     bytes identifier = 1;
     string address = 2;
 }
 
+message NodeList {
+    repeated NodeEntry entries = 1;
+}
+
 service Chord {
+    // Locate target identifier in the Chord ring
+    rpc Locate(Id) returns (NodeEntry);
+
+    // Check failure (for check_predecessor() function in the paper)
+    rpc Check(EmptyMsg) returns (EmptyMsg);
+    
     // Get the target node's current predecessor
     rpc GetPredecessor(EmptyMsg) returns (NodeEntry);
 
-    // Get the target node's current successor
-    rpc GetSuccessor(EmptyMsg) returns (NodeEntry);
+    // Get the target node's successor list
+    rpc GetSuccessors(EmptyMsg) returns (NodeList);
 
     // Set the target node's predecessor (for notify() function in the paper)
     rpc SetPredecessor(NodeEntry) returns (EmptyMsg);
-
-    // Cbeck failure (for check_predecessor() fuunction in the paper)
-    rpc Check(EmptyMsg) returns (EmptyMsg);
 }

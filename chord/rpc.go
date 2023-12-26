@@ -29,11 +29,27 @@ func (n *Node) StartRPCService() {
  * *********************************** RPC Calls ********************************* */
 
 //
-// Find the successor node of a given ID in the Chord ring
+// Locate the successor node of a given ID in the Chord ring
 // starting searching from a give address
 //
-func (n *Node) GetSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
-	n.DPrintf("findSuccessorRPC(): target address = %s", string(ety.Address))
+func (n *Node) LocateRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
+	n.DPrintf("LocateRPC(): target address = %s", string(ety.Address))
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	client := NewChordClient(conn)
+
+	req := &Id{ Identifier: id.Bytes() }
+	ctx := context.Background()
+	return client.Locate(ctx, req)
+}
+
+//
+// Find the successor list of the given node 
+//
+func (n *Node) GetSuccessorRPC(ety *NodeEntry) (*NodeList, error) {
+	n.DPrintf("GetSuccessorRPC(): target address = %s", string(ety.Address))
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -42,14 +58,14 @@ func (n *Node) GetSuccessorRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) 
 
 	req := &EmptyMsg{}
 	ctx := context.Background()
-	return client.GetSuccessor(ctx, req)
+	return client.GetSuccessors(ctx, req)
 }
 
 //
 // Find the predecessor node of the given node 
 //
 func (n *Node) GetPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
-	n.DPrintf("findPredecessorRPC(): target node = %s", ety.Address)
+	n.DPrintf("GetPredecessorRPC(): target node = %s", ety.Address)
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -98,14 +114,24 @@ func (n *Node) CheckRPC(ety *NodeEntry) (*EmptyMsg, error) {
 
 // When receiving RPC calls, nodes run the following functions to generate RPC responses
 
+func (n *Node) Locate(ctx context.Context, id *Id) (*NodeEntry, error) {
+	n.DPrintf("Check()")
+	return n.locateSuccessor(new(big.Int).SetBytes(id.Identifier))
+} 
+
+func (n *Node) Check(ctx context.Context, in *EmptyMsg) (*EmptyMsg, error) {
+	n.DPrintf("Check()")
+	return &EmptyMsg{}, nil
+} 
+
 func (n *Node) GetPredecessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
 	n.DPrintf("GetPredecessor()")
 	return n.Predecessor, nil
 }
 
-func (n *Node) GetSuccessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, error) {
-	n.DPrintf("GetSuccessor()")
-	return n.Successors[1], nil
+func (n *Node) GetSuccessors(ctx context.Context, in *EmptyMsg) (*NodeList, error) {
+	n.DPrintf("GetSuccessors()")
+	return n.Successors, nil
 }
 
 func (n *Node) SetPredecessor(ctx context.Context, pred *NodeEntry) (*EmptyMsg, error) {
@@ -116,8 +142,3 @@ func (n *Node) SetPredecessor(ctx context.Context, pred *NodeEntry) (*EmptyMsg, 
 	}
 	return &EmptyMsg{}, nil
 }
-
-func (n *Node) Check(ctx context.Context, in *EmptyMsg) (*EmptyMsg, error) {
-	n.DPrintf("Check()")
-	return &EmptyMsg{}, nil
-} 

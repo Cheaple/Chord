@@ -46,9 +46,9 @@ func NewNode(args utils.Arguments) *Node {
 	}
 	node.Entry = newNodeEntry(node.Id, node.Address)
 
-	node.FingerTable = node.newNodeTable(M + 1)  // one more element for the node itself; real fingers start from index 1
+	node.FingerTable = node.newNodeList(M + 1)  // one more element for the node itself; real fingers start from index 1
 	node.Predecessor = &NodeEntry{}  // set empty node entry
-	node.Successors = node.newNodeTable(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
+	node.Successors = node.newNodeList(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[Key]string)	
 
 	// Join or Create a Chord ring
@@ -83,8 +83,7 @@ func NewNode(args utils.Arguments) *Node {
 
 	// Periodically fix finger tables
 	go func() {
-		var next int64
-		next = 0
+		next := 0
 		ticker := time.NewTicker(time.Duration(args.FixFingerTime) * time.Millisecond)
 		for {
 			select {
@@ -128,21 +127,22 @@ func (n *Node) joinChord(joinedAddress NodeAddress) error {
 	n.Predecessor = &NodeEntry{}  // set empty node entry
 
 	// Find the successor of this node in the target Chord ring
-	succ, err := n.GetSuccessorRPC(target, n.Id)
+	succ, err := n.LocateRPC(target, n.Id)
 	if err != nil {
 		return err
 	}
-	n.Successors[1] = succ
+	n.Successors.set(1, succ)
 
 	return nil
 }
 
 //
-// Find an identifier's successor in the Chord ring
+// Locate an identifier's successor in the Chord ring
+// find_Successor() function in the paper
 //
-func (n *Node) findSuccessor(id *big.Int) (*NodeEntry, error) {
-	n.DPrintf("findSuccessor(): id = %d", id)
-	succ := n.Successors[1]
+func (n *Node) locateSuccessor(id *big.Int) (*NodeEntry, error) {
+	n.DPrintf("locateSuccessor(): id = %d", id)
+	succ := n.Successors.get(1)
 	succId := new(big.Int).SetBytes(succ.Identifier)
 	if between(n.Id, id, succId, true) {
 		// target id in (n, n.successor]
@@ -151,22 +151,23 @@ func (n *Node) findSuccessor(id *big.Int) (*NodeEntry, error) {
 
 	pred := n.closestPreceding(id)
 
-	return n.GetSuccessorRPC(pred, id)
+	return n.LocateRPC(pred, id)
 }
 
 //
 // Search the local table for the highest predecessor of id
+// closest_preceding_node() function in the paper
 //
 func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
 	n.DPrintf("closestPreceding(): id = %d", id)
 	for i := M; i > 0; i-- {
-		prec := n.FingerTable[i]
+		prec := n.FingerTable.get(i)
 		precId := new(big.Int).SetBytes(prec.Identifier)
 		if between(n.Id, precId, id, false) {
 			return prec
 		}
 	}
-	return n.FingerTable[0]
+	return n.FingerTable.get(0)
 }
 
 
@@ -181,7 +182,7 @@ func (n *Node) stabilize() {
 	n.DPrintf("stabilize()")
 
 	// Find the successor's current predecessor
-	succ := n.Successors[1]
+	succ := n.Successors.get(1)
 	succPred, err := n.GetPredecessorRPC(succ)
 	if err != nil {
 		fmt.Println("Error stabilizing:", err)
@@ -191,12 +192,12 @@ func (n *Node) stabilize() {
 	// Update the successor
 	if nodeBetweenOpen(n.Entry, succPred, succ) {
 		// if succPred in (n, succ)
-		n.Successors[1] = succPred
+		n.Successors.set(1, succPred)
 		// TODO: update successor list
 	}
 
 	// Notify the successor to update its predecessor
-	_, err = n.NotifyRPC(n.Successors[1])
+	_, err = n.NotifyRPC(n.Successors.get(1))
 	if err != nil {
 		fmt.Println("Error notifying:", err)
 	}
@@ -211,24 +212,24 @@ func (n *Node) stabilize() {
 // paras:
 // 	next: stores the index of the next finger to fix
 //
-func (n *Node) fixFinger(next int64) int64 {
+func (n *Node) fixFinger(next int) int {
 	next = next % M + 1  // next in [1, M]
 
 	// next finger's id = n.id + 2 ^ next
 	cur := new(big.Int).Set(n.Id)
-	add := new(big.Int).Exp(big.NewInt(2), big.NewInt(next - 1), nil)
+	add := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(next) - 1), nil)
 	nextId := new(big.Int).Add(cur, add)
 	nextId = new(big.Int).Mod(nextId, hashMod)
 	n.DPrintf("fixFinger(): next id = %d", nextId)
 
 	// Find a successor node that stores the next finger id
-	finger, err := n.findSuccessor(nextId)
+	finger, err := n.locateSuccessor(nextId)
 	if err != nil || finger == nil {
 		fmt.Println("Error fixing finger table:", err)
 	}
 
 	// Update finger entry
-	n.FingerTable[next] = finger
+	n.FingerTable.set(next, finger)
 	n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
 	return next
 }
