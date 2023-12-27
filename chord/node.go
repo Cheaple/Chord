@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -33,6 +34,7 @@ func (n *Node) DPrintf(str string, args ...interface{}) {
 //
 func NewNode(args utils.Arguments) *Node {
 	node := &Node{
+		lenSuccessors: args.CntSuccessors + 1,  // one more element for the node itself
 		doneCh: make(chan struct{}),
 		verbose: args.Verbose,
 	}
@@ -48,7 +50,7 @@ func NewNode(args utils.Arguments) *Node {
 
 	node.FingerTable = node.newNodeList(M + 1)  // one more element for the node itself; real fingers start from index 1
 	node.Predecessor = &NodeEntry{}  // set empty node entry
-	node.Successors = node.newNodeList(args.CntSuccessors + 1)  // one more element for the node itself; real successors start from index 1
+	node.Successors = node.newNodeList(node.lenSuccessors)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[Key]string)	
 
 	// Join or Create a Chord ring
@@ -83,7 +85,7 @@ func NewNode(args utils.Arguments) *Node {
 
 	// Periodically fix finger tables
 	go func() {
-		next := 0
+		next := 1
 		ticker := time.NewTicker(time.Duration(args.FixFingerTime) * time.Millisecond)
 		for {
 			select {
@@ -145,29 +147,46 @@ func (n *Node) locateSuccessor(id *big.Int) (*NodeEntry, error) {
 	succ := n.Successors.get(1)
 	succId := new(big.Int).SetBytes(succ.Identifier)
 	if between(n.Id, id, succId, true) {
-		// target id in (n, n.successor]
+		// if target id in (n, n.successor]
 		return succ, nil
 	}
 
-	pred := n.closestPreceding(id)
+	// Find the closest available preceding entry in the finger table
+	startIdx := M
+	for startIdx >= 1 {
+		pred, idx := n.closestPreceding(id, startIdx)
+		if pred == nil {
+			break  // no preceding finger
+		}
+		res, err := n.LocateRPC(pred, id)
+		if err == nil {
+			return res, err
+		}
 
-	return n.LocateRPC(pred, id)
+		// If a node fails during the find successor procedure, the lookup
+		// proceeds, after a timeout, by trying the next best predecessor
+		// among the nodes in the finger table and the successor list.
+		startIdx = idx - 1
+	}
+	
+	return nil, errors.New(fmt.Sprintf("Cannot locate target id: %d", id))
 }
 
 //
-// Search the local table for the highest predecessor of id
+// Search the local table for the highest predecessor of id,
+// starting from the given index of the finger table
 // closest_preceding_node() function in the paper
 //
-func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
+func (n *Node) closestPreceding(id *big.Int, startIdx int) (*NodeEntry, int) {
 	n.DPrintf("closestPreceding(): id = %d", id)
-	for i := M; i > 0; i-- {
+	for i := startIdx; i > 0; i-- {
 		prec := n.FingerTable.get(i)
 		precId := new(big.Int).SetBytes(prec.Identifier)
 		if between(n.Id, precId, id, false) {
-			return prec
+			return prec, i
 		}
 	}
-	return n.FingerTable.get(0)
+	return nil, 0
 }
 
 
@@ -176,10 +195,30 @@ func (n *Node) closestPreceding(id *big.Int) *NodeEntry {
 
 //
 // Each node periodically calls stabilize
-// to learn about newly joined nodes
+// to update successor list and learn about newly joined nodes
 //
 func (n *Node) stabilize() {
 	n.DPrintf("stabilize()")
+
+	// Update successor list
+	for i := 1; i < n.lenSuccessors; i++ {
+		succ := n.Successors.get(i)
+		succSucc, err := n.GetSuccessorListRPC(succ)  // successor's successor list
+		if err != nil {
+			// this successor fails, go to the next successor
+			continue
+		}
+
+		// reconciles its list with its successor succ 
+		// by copying succ’s successor list, 
+		// removing its last entry, and prepending succ to it.
+		n.Successors.set(1, succ)
+		for i := 1; i < n.lenSuccessors - 1; i++ {
+			n.Successors.set(i + 1, succSucc.get(i))
+		}
+		n.DPrintf("stabilize(): update Successor List: %+v", n.Successors)
+		break
+	}
 
 	// Find the successor's current predecessor
 	succ := n.Successors.get(1)
@@ -189,11 +228,14 @@ func (n *Node) stabilize() {
 		return
 	}
 	
-	// Update the successor
+	// Update successor list if newly joining node
 	if nodeBetweenOpen(n.Entry, succPred, succ) {
 		// if succPred in (n, succ)
+		for i := n.lenSuccessors - 1; i > 1; i-- {
+			n.Successors.set(i, n.Successors.get(i - 1))
+		}
 		n.Successors.set(1, succPred)
-		// TODO: update successor list
+		n.DPrintf("stabilize(): update Successor List: %+v", n.Successors)
 	}
 
 	// Notify the successor to update its predecessor
@@ -213,8 +255,6 @@ func (n *Node) stabilize() {
 // 	next: stores the index of the next finger to fix
 //
 func (n *Node) fixFinger(next int) int {
-	next = next % M + 1  // next in [1, M]
-
 	// next finger's id = n.id + 2 ^ next
 	cur := new(big.Int).Set(n.Id)
 	add := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(next) - 1), nil)
@@ -226,12 +266,14 @@ func (n *Node) fixFinger(next int) int {
 	finger, err := n.locateSuccessor(nextId)
 	if err != nil || finger == nil {
 		fmt.Println("Error fixing finger table:", err)
+		return next
 	}
 
 	// Update finger entry
 	n.FingerTable.set(next, finger)
 	n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
-	return next
+	return next % M + 1  // next in [1, M]
+
 }
 
 //

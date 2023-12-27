@@ -21,11 +21,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Chord_Locate_FullMethodName         = "/Chord/Locate"
-	Chord_Check_FullMethodName          = "/Chord/Check"
-	Chord_GetPredecessor_FullMethodName = "/Chord/GetPredecessor"
-	Chord_GetSuccessors_FullMethodName  = "/Chord/GetSuccessors"
-	Chord_SetPredecessor_FullMethodName = "/Chord/SetPredecessor"
+	Chord_Locate_FullMethodName           = "/Chord/Locate"
+	Chord_Check_FullMethodName            = "/Chord/Check"
+	Chord_GetPredecessor_FullMethodName   = "/Chord/GetPredecessor"
+	Chord_GetSuccessorList_FullMethodName = "/Chord/GetSuccessorList"
+	Chord_SetPredecessor_FullMethodName   = "/Chord/SetPredecessor"
 )
 
 // ChordClient is the client API for Chord service.
@@ -39,7 +39,7 @@ type ChordClient interface {
 	// Get the target node's current predecessor
 	GetPredecessor(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeEntry, error)
 	// Get the target node's successor list
-	GetSuccessors(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeList, error)
+	GetSuccessorList(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeList, error)
 	// Set the target node's predecessor (for notify() function in the paper)
 	SetPredecessor(ctx context.Context, in *NodeEntry, opts ...grpc.CallOption) (*EmptyMsg, error)
 }
@@ -79,9 +79,9 @@ func (c *chordClient) GetPredecessor(ctx context.Context, in *EmptyMsg, opts ...
 	return out, nil
 }
 
-func (c *chordClient) GetSuccessors(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeList, error) {
+func (c *chordClient) GetSuccessorList(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeList, error) {
 	out := new(NodeList)
-	err := c.cc.Invoke(ctx, Chord_GetSuccessors_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Chord_GetSuccessorList_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ type ChordServer interface {
 	// Get the target node's current predecessor
 	GetPredecessor(context.Context, *EmptyMsg) (*NodeEntry, error)
 	// Get the target node's successor list
-	GetSuccessors(context.Context, *EmptyMsg) (*NodeList, error)
+	GetSuccessorList(context.Context, *EmptyMsg) (*NodeList, error)
 	// Set the target node's predecessor (for notify() function in the paper)
 	SetPredecessor(context.Context, *NodeEntry) (*EmptyMsg, error)
 }
@@ -126,8 +126,8 @@ func (UnimplementedChordServer) Check(context.Context, *EmptyMsg) (*EmptyMsg, er
 func (UnimplementedChordServer) GetPredecessor(context.Context, *EmptyMsg) (*NodeEntry, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPredecessor not implemented")
 }
-func (UnimplementedChordServer) GetSuccessors(context.Context, *EmptyMsg) (*NodeList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSuccessors not implemented")
+func (UnimplementedChordServer) GetSuccessorList(context.Context, *EmptyMsg) (*NodeList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSuccessorList not implemented")
 }
 func (UnimplementedChordServer) SetPredecessor(context.Context, *NodeEntry) (*EmptyMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPredecessor not implemented")
@@ -198,20 +198,20 @@ func _Chord_GetPredecessor_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Chord_GetSuccessors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Chord_GetSuccessorList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChordServer).GetSuccessors(ctx, in)
+		return srv.(ChordServer).GetSuccessorList(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Chord_GetSuccessors_FullMethodName,
+		FullMethod: Chord_GetSuccessorList_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).GetSuccessors(ctx, req.(*EmptyMsg))
+		return srv.(ChordServer).GetSuccessorList(ctx, req.(*EmptyMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -254,8 +254,8 @@ var Chord_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Chord_GetPredecessor_Handler,
 		},
 		{
-			MethodName: "GetSuccessors",
-			Handler:    _Chord_GetSuccessors_Handler,
+			MethodName: "GetSuccessorList",
+			Handler:    _Chord_GetSuccessorList_Handler,
 		},
 		{
 			MethodName: "SetPredecessor",

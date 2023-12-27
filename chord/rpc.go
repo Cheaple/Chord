@@ -48,8 +48,8 @@ func (n *Node) LocateRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 //
 // Find the successor list of the given node 
 //
-func (n *Node) GetSuccessorRPC(ety *NodeEntry) (*NodeList, error) {
-	n.DPrintf("GetSuccessorRPC(): target address = %s", string(ety.Address))
+func (n *Node) GetSuccessorListRPC(ety *NodeEntry) (*NodeList, error) {
+	n.DPrintf("GetSuccessorListRPC(): target address = %s", string(ety.Address))
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (n *Node) GetSuccessorRPC(ety *NodeEntry) (*NodeList, error) {
 
 	req := &EmptyMsg{}
 	ctx := context.Background()
-	return client.GetSuccessors(ctx, req)
+	return client.GetSuccessorList(ctx, req)
 }
 
 //
@@ -129,8 +129,8 @@ func (n *Node) GetPredecessor(ctx context.Context, in *EmptyMsg) (*NodeEntry, er
 	return n.Predecessor, nil
 }
 
-func (n *Node) GetSuccessors(ctx context.Context, in *EmptyMsg) (*NodeList, error) {
-	n.DPrintf("GetSuccessors()")
+func (n *Node) GetSuccessorList(ctx context.Context, in *EmptyMsg) (*NodeList, error) {
+	n.DPrintf("GetSuccessorList()")
 	return n.Successors, nil
 }
 

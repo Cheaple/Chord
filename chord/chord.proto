@@ -30,7 +30,7 @@ service Chord {
     rpc GetPredecessor(EmptyMsg) returns (NodeEntry);
 
     // Get the target node's successor list
-    rpc GetSuccessors(EmptyMsg) returns (NodeList);
+    rpc GetSuccessorList(EmptyMsg) returns (NodeList);
 
     // Set the target node's predecessor (for notify() function in the paper)
     rpc SetPredecessor(NodeEntry) returns (EmptyMsg);
