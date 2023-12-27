@@ -155,12 +155,12 @@ func (n *Node) locateSuccessor(id *big.Int) (*NodeEntry, error) {
 	startIdx := M
 	for startIdx >= 1 {
 		pred, idx := n.closestPreceding(id, startIdx)
-		if pred == nil {
-			break  // no preceding finger
+		if pred == n.Entry {
+			return pred, nil
 		}
 		res, err := n.LocateRPC(pred, id)
 		if err == nil {
-			return res, err
+			return res, nil
 		}
 
 		// If a node fails during the find successor procedure, the lookup
@@ -186,7 +186,7 @@ func (n *Node) closestPreceding(id *big.Int, startIdx int) (*NodeEntry, int) {
 			return prec, i
 		}
 	}
-	return nil, 0
+	return n.FingerTable.get(0), 0
 }
 
 
