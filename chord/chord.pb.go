@@ -209,6 +209,147 @@ func (x *NodeList) GetEntries() []*NodeEntry {
 	return nil
 }
 
+type BoolMsg struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+}
+
+func (x *BoolMsg) Reset() {
+	*x = BoolMsg{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_chord_chord_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BoolMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoolMsg) ProtoMessage() {}
+
+func (x *BoolMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_chord_chord_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoolMsg.ProtoReflect.Descriptor instead.
+func (*BoolMsg) Descriptor() ([]byte, []int) {
+	return file_chord_chord_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BoolMsg) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type KeyMsg struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (x *KeyMsg) Reset() {
+	*x = KeyMsg{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_chord_chord_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *KeyMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeyMsg) ProtoMessage() {}
+
+func (x *KeyMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_chord_chord_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeyMsg.ProtoReflect.Descriptor instead.
+func (*KeyMsg) Descriptor() ([]byte, []int) {
+	return file_chord_chord_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *KeyMsg) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type FileMsg struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *FileMsg) Reset() {
+	*x = FileMsg{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_chord_chord_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FileMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileMsg) ProtoMessage() {}
+
+func (x *FileMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_chord_chord_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileMsg.ProtoReflect.Descriptor instead.
+func (*FileMsg) Descriptor() ([]byte, []int) {
+	return file_chord_chord_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *FileMsg) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 var File_chord_chord_proto protoreflect.FileDescriptor
 
 var file_chord_chord_proto_rawDesc = []byte{
@@ -223,7 +364,13 @@ var file_chord_chord_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x30, 0x0a, 0x08,
 	0x4e, 0x6f, 0x64, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x24, 0x0a, 0x07, 0x65, 0x6e, 0x74, 0x72,
 	0x69, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x4e, 0x6f, 0x64, 0x65,
-	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x32, 0xbd,
+	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x22, 0x23,
+	0x0a, 0x07, 0x42, 0x6f, 0x6f, 0x6c, 0x4d, 0x73, 0x67, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63,
+	0x63, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63,
+	0x65, 0x73, 0x73, 0x22, 0x1a, 0x0a, 0x06, 0x4b, 0x65, 0x79, 0x4d, 0x73, 0x67, 0x12, 0x10, 0x0a,
+	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x22,
+	0x1d, 0x0a, 0x07, 0x46, 0x69, 0x6c, 0x65, 0x4d, 0x73, 0x67, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61,
+	0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x32, 0xdc,
 	0x01, 0x0a, 0x05, 0x43, 0x68, 0x6f, 0x72, 0x64, 0x12, 0x19, 0x0a, 0x06, 0x4c, 0x6f, 0x63, 0x61,
 	0x74, 0x65, 0x12, 0x03, 0x2e, 0x49, 0x64, 0x1a, 0x0a, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e,
 	0x74, 0x72, 0x79, 0x12, 0x1d, 0x0a, 0x05, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x09, 0x2e, 0x45,
@@ -235,9 +382,10 @@ var file_chord_chord_proto_rawDesc = []byte{
 	0x09, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67, 0x1a, 0x09, 0x2e, 0x4e, 0x6f, 0x64,
 	0x65, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x27, 0x0a, 0x0e, 0x53, 0x65, 0x74, 0x50, 0x72, 0x65, 0x64,
 	0x65, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72, 0x12, 0x0a, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x45, 0x6e,
-	0x74, 0x72, 0x79, 0x1a, 0x09, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67, 0x42, 0x09,
-	0x5a, 0x07, 0x2e, 0x2f, 0x63, 0x68, 0x6f, 0x72, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x74, 0x72, 0x79, 0x1a, 0x09, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x4d, 0x73, 0x67, 0x12, 0x1d,
+	0x0a, 0x08, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x4b, 0x65, 0x79, 0x12, 0x07, 0x2e, 0x4b, 0x65, 0x79,
+	0x4d, 0x73, 0x67, 0x1a, 0x08, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x4d, 0x73, 0x67, 0x42, 0x09, 0x5a,
+	0x07, 0x2e, 0x2f, 0x63, 0x68, 0x6f, 0x72, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -252,12 +400,15 @@ func file_chord_chord_proto_rawDescGZIP() []byte {
 	return file_chord_chord_proto_rawDescData
 }
 
-var file_chord_chord_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_chord_chord_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_chord_chord_proto_goTypes = []interface{}{
 	(*EmptyMsg)(nil),  // 0: EmptyMsg
 	(*Id)(nil),        // 1: Id
 	(*NodeEntry)(nil), // 2: NodeEntry
 	(*NodeList)(nil),  // 3: NodeList
+	(*BoolMsg)(nil),   // 4: BoolMsg
+	(*KeyMsg)(nil),    // 5: KeyMsg
+	(*FileMsg)(nil),   // 6: FileMsg
 }
 var file_chord_chord_proto_depIdxs = []int32{
 	2, // 0: NodeList.entries:type_name -> NodeEntry
@@ -266,13 +417,15 @@ var file_chord_chord_proto_depIdxs = []int32{
 	0, // 3: Chord.GetPredecessor:input_type -> EmptyMsg
 	0, // 4: Chord.GetSuccessorList:input_type -> EmptyMsg
 	2, // 5: Chord.SetPredecessor:input_type -> NodeEntry
-	2, // 6: Chord.Locate:output_type -> NodeEntry
-	0, // 7: Chord.Check:output_type -> EmptyMsg
-	2, // 8: Chord.GetPredecessor:output_type -> NodeEntry
-	3, // 9: Chord.GetSuccessorList:output_type -> NodeList
-	0, // 10: Chord.SetPredecessor:output_type -> EmptyMsg
-	6, // [6:11] is the sub-list for method output_type
-	1, // [1:6] is the sub-list for method input_type
+	5, // 6: Chord.CheckKey:input_type -> KeyMsg
+	2, // 7: Chord.Locate:output_type -> NodeEntry
+	0, // 8: Chord.Check:output_type -> EmptyMsg
+	2, // 9: Chord.GetPredecessor:output_type -> NodeEntry
+	3, // 10: Chord.GetSuccessorList:output_type -> NodeList
+	0, // 11: Chord.SetPredecessor:output_type -> EmptyMsg
+	4, // 12: Chord.CheckKey:output_type -> BoolMsg
+	7, // [7:13] is the sub-list for method output_type
+	1, // [1:7] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -332,6 +485,42 @@ func file_chord_chord_proto_init() {
 				return nil
 			}
 		}
+		file_chord_chord_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BoolMsg); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_chord_chord_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*KeyMsg); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_chord_chord_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FileMsg); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -339,7 +528,7 @@ func file_chord_chord_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_chord_chord_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -38,14 +38,16 @@ func runChordClient(node *chord.Node) {
 
 			// Look up for a filename in the Chord ring
 			filename := cmdArgs[1]
-			resultAddr, err := node.LookUp(filename)
+			res, err := node.LookUp(filename)
 			if err != nil {
-				fmt.Println("Error looking up file:", err)
+				if res != nil {
+					fmt.Printf("File not found in %s\n", res.ToString())
+				} else {
+					fmt.Printf("Error locating file: %s\n", err)
+				}
 				continue
 			}
-			fmt.Printf("The file should be in Node (%s)\n", resultAddr)
-
-			// TODO: check file existence
+			fmt.Printf("File found in %s\n", res.ToString())
 
 		} else if cmd == "GETFILE" || cmd == "GET" || cmd == "G" {
 			if len(cmdArgs) < 2 {

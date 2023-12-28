@@ -19,6 +19,18 @@ message NodeList {
     repeated NodeEntry entries = 1;
 }
 
+message BoolMsg {
+    bool success = 1;
+}
+
+message KeyMsg {
+    string key = 1;
+}
+
+message FileMsg {
+    bytes data = 1;
+}
+
 service Chord {
     // Locate target identifier in the Chord ring
     rpc Locate(Id) returns (NodeEntry);
@@ -34,4 +46,7 @@ service Chord {
 
     // Set the target node's predecessor (for notify() function in the paper)
     rpc SetPredecessor(NodeEntry) returns (EmptyMsg);
+
+    // Check whether a key exists in the target node's buckets
+    rpc CheckKey(KeyMsg) returns (BoolMsg);
 }

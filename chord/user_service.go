@@ -6,6 +6,7 @@ package chord
  */
 
 import (
+	"errors"
 	"fmt"
 	// "log"
 	"math/big"
@@ -65,10 +66,16 @@ func (n *Node) Print() {
 //
 // Look up a key in the Chord ring
 //
-func (n *Node) LookUp(key string) (string, error) {
-
-
-	return "", nil
+func (n *Node) LookUp(key string) (*NodeEntry, error) {
+	targetNode, err := n.lookup(key)
+	if err != nil {
+		return nil, err
+	}
+	ifExist, err := n.CheckKeyRPC(targetNode, key)
+	if err != nil || ifExist == false {
+		return targetNode, errors.New("File not found")
+	}
+	return targetNode, nil
 }
 
 //

@@ -51,7 +51,7 @@ func NewNode(args utils.Arguments) *Node {
 	node.FingerTable = node.newNodeList(M + 1)  // one more element for the node itself; real fingers start from index 1
 	node.Predecessor = &NodeEntry{}  // set empty node entry
 	node.Successors = node.newNodeList(node.lenSuccessors)  // one more element for the node itself; real successors start from index 1
-	node.Bucket = make(map[Key]string)	
+	node.Bucket = make(map[string]int)
 
 	// Join or Create a Chord ring
 	if args.JoinAddress != "" {
@@ -65,6 +65,9 @@ func NewNode(args utils.Arguments) *Node {
 		fmt.Println("Creating a new Chord ring at node", node.Address)
 		// node.create()
 	}
+
+	// Start data store
+	node.StartDataStore()
 
 	// Start RPC service to communicate with other Chord nodes
 	node.StartRPCService()
@@ -170,6 +173,14 @@ func (n *Node) locateSuccessor(id *big.Int) (*NodeEntry, error) {
 	}
 	
 	return nil, errors.New(fmt.Sprintf("Cannot locate target id: %d", id))
+}
+
+//
+// Locate a Key's successor in the Chord ring
+//
+func (n *Node) lookup(key string) (*NodeEntry, error) {
+	id := hashString(key)
+	return n.locateSuccessor(id)
 }
 
 //

@@ -2,6 +2,7 @@ package chord
 
 import (
 	"crypto/sha1"
+    "fmt"
     "google.golang.org/grpc"
     "log"
 	"math/big"
@@ -11,7 +12,7 @@ import (
 const M = 7  // m-bit identifier
 var hashMod = new(big.Int).Exp(big.NewInt(2), big.NewInt(M), nil)
 
-type Key string
+// type Key string
 
 type NodeAddress string
 
@@ -24,9 +25,9 @@ type Node struct {
     FingerTable     *NodeList           // Finger Table
     Predecessor	    *NodeEntry          // Predecessor
     Successors 	    *NodeList           // Successor List
-    lenSuccessors   int               // length of successor list
+    lenSuccessors   int                 // length of successor list
 
-    Bucket 		    map[Key]string      // Buckets to store files
+    Bucket 		    map[string]int         // Buckets to store files
 
     rpcService      GRPCService         // Service for communications between Chord nodes
 
@@ -68,6 +69,12 @@ func newNodeEntry(id *big.Int, address NodeAddress) *NodeEntry {
 // Return true if the NodeEntry is empty
 func (entry *NodeEntry) empty() bool {
     return entry.Address == ""
+}
+
+// Print NodeEntry id & address
+func (entry *NodeEntry) ToString() string {
+    id := new(big.Int).SetBytes(entry.Identifier)
+    return fmt.Sprintf("node-%d (%s)", id, string(entry.Address))
 }
 
 //

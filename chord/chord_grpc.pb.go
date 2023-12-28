@@ -26,6 +26,7 @@ const (
 	Chord_GetPredecessor_FullMethodName   = "/Chord/GetPredecessor"
 	Chord_GetSuccessorList_FullMethodName = "/Chord/GetSuccessorList"
 	Chord_SetPredecessor_FullMethodName   = "/Chord/SetPredecessor"
+	Chord_CheckKey_FullMethodName         = "/Chord/CheckKey"
 )
 
 // ChordClient is the client API for Chord service.
@@ -42,6 +43,8 @@ type ChordClient interface {
 	GetSuccessorList(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeList, error)
 	// Set the target node's predecessor (for notify() function in the paper)
 	SetPredecessor(ctx context.Context, in *NodeEntry, opts ...grpc.CallOption) (*EmptyMsg, error)
+	// Check whether a key exists in the target node's buckets
+	CheckKey(ctx context.Context, in *KeyMsg, opts ...grpc.CallOption) (*BoolMsg, error)
 }
 
 type chordClient struct {
@@ -97,6 +100,15 @@ func (c *chordClient) SetPredecessor(ctx context.Context, in *NodeEntry, opts ..
 	return out, nil
 }
 
+func (c *chordClient) CheckKey(ctx context.Context, in *KeyMsg, opts ...grpc.CallOption) (*BoolMsg, error) {
+	out := new(BoolMsg)
+	err := c.cc.Invoke(ctx, Chord_CheckKey_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChordServer is the server API for Chord service.
 // All implementations should embed UnimplementedChordServer
 // for forward compatibility
@@ -111,6 +123,8 @@ type ChordServer interface {
 	GetSuccessorList(context.Context, *EmptyMsg) (*NodeList, error)
 	// Set the target node's predecessor (for notify() function in the paper)
 	SetPredecessor(context.Context, *NodeEntry) (*EmptyMsg, error)
+	// Check whether a key exists in the target node's buckets
+	CheckKey(context.Context, *KeyMsg) (*BoolMsg, error)
 }
 
 // UnimplementedChordServer should be embedded to have forward compatible implementations.
@@ -131,6 +145,9 @@ func (UnimplementedChordServer) GetSuccessorList(context.Context, *EmptyMsg) (*N
 }
 func (UnimplementedChordServer) SetPredecessor(context.Context, *NodeEntry) (*EmptyMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPredecessor not implemented")
+}
+func (UnimplementedChordServer) CheckKey(context.Context, *KeyMsg) (*BoolMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckKey not implemented")
 }
 
 // UnsafeChordServer may be embedded to opt out of forward compatibility for this service.
@@ -234,6 +251,24 @@ func _Chord_SetPredecessor_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Chord_CheckKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KeyMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChordServer).CheckKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Chord_CheckKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChordServer).CheckKey(ctx, req.(*KeyMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Chord_ServiceDesc is the grpc.ServiceDesc for Chord service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -260,6 +295,10 @@ var Chord_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetPredecessor",
 			Handler:    _Chord_SetPredecessor_Handler,
+		},
+		{
+			MethodName: "CheckKey",
+			Handler:    _Chord_CheckKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

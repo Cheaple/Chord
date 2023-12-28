@@ -109,6 +109,23 @@ func (n *Node) CheckRPC(ety *NodeEntry) (*EmptyMsg, error) {
 	return client.Check(ctx, req)
 }
 
+//
+// Check whether a file exists
+//
+func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
+	n.DPrintf("CheckKeyRPC(): target node = %s, key = %s", ety.Address, key)
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	if err != nil {
+		return false, err
+	}
+	client := NewChordClient(conn)
+
+	req := &KeyMsg{Key: key,}
+	ctx := context.Background()
+	boolMsg, err := client.CheckKey(ctx, req)
+	return boolMsg.Success, err
+}
+
 /* ******************************************************************************* *
  * ******************************* RPC Responses ********************************* */
 
@@ -141,4 +158,10 @@ func (n *Node) SetPredecessor(ctx context.Context, pred *NodeEntry) (*EmptyMsg, 
 		n.Predecessor = pred
 	}
 	return &EmptyMsg{}, nil
+}
+
+func (n *Node) CheckKey(ctx context.Context, in *KeyMsg) (*BoolMsg, error) {
+	n.DPrintf("CheckKey(): %+v", in)
+	_, ok := n.Bucket[in.Key]
+	return &BoolMsg{ Success: ok }, nil
 }
