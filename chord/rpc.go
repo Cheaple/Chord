@@ -40,7 +40,7 @@ func (n *Node) LocateRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 	}
 	client := NewChordClient(conn)
 
-	req := &Id{ Identifier: id.Bytes() }
+	req := &BytesMsg{ Data: id.Bytes() }
 	ctx := context.Background()
 	return client.Locate(ctx, req)
 }
@@ -131,9 +131,9 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 
 // When receiving RPC calls, nodes run the following functions to generate RPC responses
 
-func (n *Node) Locate(ctx context.Context, id *Id) (*NodeEntry, error) {
+func (n *Node) Locate(ctx context.Context, in *BytesMsg) (*NodeEntry, error) {
 	n.DPrintf("Check()")
-	return n.locateSuccessor(new(big.Int).SetBytes(id.Identifier))
+	return n.locateSuccessor(new(big.Int).SetBytes(in.Data))
 } 
 
 func (n *Node) Check(ctx context.Context, in *EmptyMsg) (*EmptyMsg, error) {

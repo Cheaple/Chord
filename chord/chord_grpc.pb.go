@@ -34,7 +34,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChordClient interface {
 	// Locate target identifier in the Chord ring
-	Locate(ctx context.Context, in *Id, opts ...grpc.CallOption) (*NodeEntry, error)
+	Locate(ctx context.Context, in *BytesMsg, opts ...grpc.CallOption) (*NodeEntry, error)
 	// Check failure (for check_predecessor() function in the paper)
 	Check(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*EmptyMsg, error)
 	// Get the target node's current predecessor
@@ -55,7 +55,7 @@ func NewChordClient(cc grpc.ClientConnInterface) ChordClient {
 	return &chordClient{cc}
 }
 
-func (c *chordClient) Locate(ctx context.Context, in *Id, opts ...grpc.CallOption) (*NodeEntry, error) {
+func (c *chordClient) Locate(ctx context.Context, in *BytesMsg, opts ...grpc.CallOption) (*NodeEntry, error) {
 	out := new(NodeEntry)
 	err := c.cc.Invoke(ctx, Chord_Locate_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *chordClient) CheckKey(ctx context.Context, in *KeyMsg, opts ...grpc.Cal
 // for forward compatibility
 type ChordServer interface {
 	// Locate target identifier in the Chord ring
-	Locate(context.Context, *Id) (*NodeEntry, error)
+	Locate(context.Context, *BytesMsg) (*NodeEntry, error)
 	// Check failure (for check_predecessor() function in the paper)
 	Check(context.Context, *EmptyMsg) (*EmptyMsg, error)
 	// Get the target node's current predecessor
@@ -131,7 +131,7 @@ type ChordServer interface {
 type UnimplementedChordServer struct {
 }
 
-func (UnimplementedChordServer) Locate(context.Context, *Id) (*NodeEntry, error) {
+func (UnimplementedChordServer) Locate(context.Context, *BytesMsg) (*NodeEntry, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Locate not implemented")
 }
 func (UnimplementedChordServer) Check(context.Context, *EmptyMsg) (*EmptyMsg, error) {
@@ -162,7 +162,7 @@ func RegisterChordServer(s grpc.ServiceRegistrar, srv ChordServer) {
 }
 
 func _Chord_Locate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Id)
+	in := new(BytesMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func _Chord_Locate_Handler(srv interface{}, ctx context.Context, dec func(interf
 		FullMethod: Chord_Locate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).Locate(ctx, req.(*Id))
+		return srv.(ChordServer).Locate(ctx, req.(*BytesMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }
