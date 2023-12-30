@@ -67,10 +67,10 @@ func NewNode(args utils.Arguments) *Node {
 	}
 
 	// Start data store
-	node.StartDataStore()
+	node.startDataStore()
 
 	// Start RPC service to communicate with other Chord nodes
-	node.StartRPCService()
+	node.startRPCService()
 
 	// Periodically stabilize
 	go func() {

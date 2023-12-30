@@ -19,20 +19,26 @@ message BoolMsg {
     bool success = 1;
 }
 
-message KeyMsg {
-    string key = 1;
+message StringMsg {
+    string str = 1;
 }
 
 message BytesMsg {
     bytes data = 1;
 }
 
+message FileMsg {
+    string name = 1;
+    bytes content = 2;
+}
+
+
 service Chord {
     // Locate target identifier in the Chord ring
     rpc Locate(BytesMsg) returns (NodeEntry);
 
     // Check failure (for check_predecessor() function in the paper)
-    rpc Check(EmptyMsg) returns (EmptyMsg);
+    rpc Check(EmptyMsg) returns (BoolMsg);
     
     // Get the target node's current predecessor
     rpc GetPredecessor(EmptyMsg) returns (NodeEntry);
@@ -41,8 +47,14 @@ service Chord {
     rpc GetSuccessorList(EmptyMsg) returns (NodeList);
 
     // Set the target node's predecessor (for notify() function in the paper)
-    rpc SetPredecessor(NodeEntry) returns (EmptyMsg);
+    rpc SetPredecessor(NodeEntry) returns (BoolMsg);
 
     // Check whether a key exists in the target node's buckets
-    rpc CheckKey(KeyMsg) returns (BoolMsg);
+    rpc CheckKey(StringMsg) returns (BoolMsg);
+
+    // Upload a file to the target node
+    rpc UploadFile(FileMsg) returns (BoolMsg);
+
+    // Download a file from the target node
+    rpc DownloadFile(StringMsg) returns (stream BytesMsg);
 }

@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path"
+	// "path/filepath"
 )
 
 const rootDir = "./data"
@@ -17,7 +18,7 @@ const rootDir = "./data"
 //
 // Initialize data storage for this node, using local file system
 //
-func (n *Node) StartDataStore() {
+func (n *Node) startDataStore() {
 	nodeDir := path.Join(rootDir, string(n.Address))
 
 	if _, err := os.Stat(nodeDir); os.IsNotExist(err) {
@@ -43,4 +44,27 @@ func (n *Node) StartDataStore() {
 			n.Bucket[name] = 1
 		}
 	}
+}
+
+//
+// Store a file in the node's data store
+//
+func (n *Node) storeFile() error {
+	
+
+	return nil
+}
+
+//
+// Get a file from the local data store  
+//
+func (n *Node) getFile(filePath string) error {
+	// Open file and pack into fileRPC
+	file, err := os.Open(filePath)
+	if err != nil {
+		// fmt.Println("Error opening file:", err)
+		return err
+	}
+	defer file.Close()
+
 }

@@ -60,6 +60,7 @@ func runChordClient(node *chord.Node) {
 			fileName := cmdArgs[1]
 			_, err := node.Get(fileName)
 			if err != nil {
+				fmt.Println("GET Failure:", err)
 				continue
 			}
 			fmt.Println("GET Success")
@@ -75,10 +76,10 @@ func runChordClient(node *chord.Node) {
 			fileName := cmdArgs[1]
 			_, err := node.Store(fileName)
 			if err != nil {
-				fmt.Println("Error storing file:", err)
+				fmt.Println("STORE Failure:", err)
 				continue
 			} 
-			fmt.Println("STOREFILE Success")
+			fmt.Println("STORE Success")
 
 		} else if cmd == "QUIT" || cmd == "Q" {
 			log.Println("Exit Chord Ring!")

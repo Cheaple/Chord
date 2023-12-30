@@ -27,6 +27,8 @@ const (
 	Chord_GetSuccessorList_FullMethodName = "/Chord/GetSuccessorList"
 	Chord_SetPredecessor_FullMethodName   = "/Chord/SetPredecessor"
 	Chord_CheckKey_FullMethodName         = "/Chord/CheckKey"
+	Chord_UploadFile_FullMethodName       = "/Chord/UploadFile"
+	Chord_DownloadFile_FullMethodName     = "/Chord/DownloadFile"
 )
 
 // ChordClient is the client API for Chord service.
@@ -36,15 +38,19 @@ type ChordClient interface {
 	// Locate target identifier in the Chord ring
 	Locate(ctx context.Context, in *BytesMsg, opts ...grpc.CallOption) (*NodeEntry, error)
 	// Check failure (for check_predecessor() function in the paper)
-	Check(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*EmptyMsg, error)
+	Check(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*BoolMsg, error)
 	// Get the target node's current predecessor
 	GetPredecessor(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeEntry, error)
 	// Get the target node's successor list
 	GetSuccessorList(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*NodeList, error)
 	// Set the target node's predecessor (for notify() function in the paper)
-	SetPredecessor(ctx context.Context, in *NodeEntry, opts ...grpc.CallOption) (*EmptyMsg, error)
+	SetPredecessor(ctx context.Context, in *NodeEntry, opts ...grpc.CallOption) (*BoolMsg, error)
 	// Check whether a key exists in the target node's buckets
-	CheckKey(ctx context.Context, in *KeyMsg, opts ...grpc.CallOption) (*BoolMsg, error)
+	CheckKey(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (*BoolMsg, error)
+	// Upload a file to the target node
+	UploadFile(ctx context.Context, in *FileMsg, opts ...grpc.CallOption) (*BoolMsg, error)
+	// Download a file from the target node
+	DownloadFile(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (Chord_DownloadFileClient, error)
 }
 
 type chordClient struct {
@@ -64,8 +70,8 @@ func (c *chordClient) Locate(ctx context.Context, in *BytesMsg, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *chordClient) Check(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*EmptyMsg, error) {
-	out := new(EmptyMsg)
+func (c *chordClient) Check(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (*BoolMsg, error) {
+	out := new(BoolMsg)
 	err := c.cc.Invoke(ctx, Chord_Check_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -91,8 +97,8 @@ func (c *chordClient) GetSuccessorList(ctx context.Context, in *EmptyMsg, opts .
 	return out, nil
 }
 
-func (c *chordClient) SetPredecessor(ctx context.Context, in *NodeEntry, opts ...grpc.CallOption) (*EmptyMsg, error) {
-	out := new(EmptyMsg)
+func (c *chordClient) SetPredecessor(ctx context.Context, in *NodeEntry, opts ...grpc.CallOption) (*BoolMsg, error) {
+	out := new(BoolMsg)
 	err := c.cc.Invoke(ctx, Chord_SetPredecessor_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -100,13 +106,54 @@ func (c *chordClient) SetPredecessor(ctx context.Context, in *NodeEntry, opts ..
 	return out, nil
 }
 
-func (c *chordClient) CheckKey(ctx context.Context, in *KeyMsg, opts ...grpc.CallOption) (*BoolMsg, error) {
+func (c *chordClient) CheckKey(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (*BoolMsg, error) {
 	out := new(BoolMsg)
 	err := c.cc.Invoke(ctx, Chord_CheckKey_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *chordClient) UploadFile(ctx context.Context, in *FileMsg, opts ...grpc.CallOption) (*BoolMsg, error) {
+	out := new(BoolMsg)
+	err := c.cc.Invoke(ctx, Chord_UploadFile_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chordClient) DownloadFile(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (Chord_DownloadFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Chord_ServiceDesc.Streams[0], Chord_DownloadFile_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chordDownloadFileClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Chord_DownloadFileClient interface {
+	Recv() (*BytesMsg, error)
+	grpc.ClientStream
+}
+
+type chordDownloadFileClient struct {
+	grpc.ClientStream
+}
+
+func (x *chordDownloadFileClient) Recv() (*BytesMsg, error) {
+	m := new(BytesMsg)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // ChordServer is the server API for Chord service.
@@ -116,15 +163,19 @@ type ChordServer interface {
 	// Locate target identifier in the Chord ring
 	Locate(context.Context, *BytesMsg) (*NodeEntry, error)
 	// Check failure (for check_predecessor() function in the paper)
-	Check(context.Context, *EmptyMsg) (*EmptyMsg, error)
+	Check(context.Context, *EmptyMsg) (*BoolMsg, error)
 	// Get the target node's current predecessor
 	GetPredecessor(context.Context, *EmptyMsg) (*NodeEntry, error)
 	// Get the target node's successor list
 	GetSuccessorList(context.Context, *EmptyMsg) (*NodeList, error)
 	// Set the target node's predecessor (for notify() function in the paper)
-	SetPredecessor(context.Context, *NodeEntry) (*EmptyMsg, error)
+	SetPredecessor(context.Context, *NodeEntry) (*BoolMsg, error)
 	// Check whether a key exists in the target node's buckets
-	CheckKey(context.Context, *KeyMsg) (*BoolMsg, error)
+	CheckKey(context.Context, *StringMsg) (*BoolMsg, error)
+	// Upload a file to the target node
+	UploadFile(context.Context, *FileMsg) (*BoolMsg, error)
+	// Download a file from the target node
+	DownloadFile(*StringMsg, Chord_DownloadFileServer) error
 }
 
 // UnimplementedChordServer should be embedded to have forward compatible implementations.
@@ -134,7 +185,7 @@ type UnimplementedChordServer struct {
 func (UnimplementedChordServer) Locate(context.Context, *BytesMsg) (*NodeEntry, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Locate not implemented")
 }
-func (UnimplementedChordServer) Check(context.Context, *EmptyMsg) (*EmptyMsg, error) {
+func (UnimplementedChordServer) Check(context.Context, *EmptyMsg) (*BoolMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
 }
 func (UnimplementedChordServer) GetPredecessor(context.Context, *EmptyMsg) (*NodeEntry, error) {
@@ -143,11 +194,17 @@ func (UnimplementedChordServer) GetPredecessor(context.Context, *EmptyMsg) (*Nod
 func (UnimplementedChordServer) GetSuccessorList(context.Context, *EmptyMsg) (*NodeList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSuccessorList not implemented")
 }
-func (UnimplementedChordServer) SetPredecessor(context.Context, *NodeEntry) (*EmptyMsg, error) {
+func (UnimplementedChordServer) SetPredecessor(context.Context, *NodeEntry) (*BoolMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPredecessor not implemented")
 }
-func (UnimplementedChordServer) CheckKey(context.Context, *KeyMsg) (*BoolMsg, error) {
+func (UnimplementedChordServer) CheckKey(context.Context, *StringMsg) (*BoolMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckKey not implemented")
+}
+func (UnimplementedChordServer) UploadFile(context.Context, *FileMsg) (*BoolMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
+}
+func (UnimplementedChordServer) DownloadFile(*StringMsg, Chord_DownloadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
 }
 
 // UnsafeChordServer may be embedded to opt out of forward compatibility for this service.
@@ -252,7 +309,7 @@ func _Chord_SetPredecessor_Handler(srv interface{}, ctx context.Context, dec fun
 }
 
 func _Chord_CheckKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(KeyMsg)
+	in := new(StringMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -264,9 +321,48 @@ func _Chord_CheckKey_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: Chord_CheckKey_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).CheckKey(ctx, req.(*KeyMsg))
+		return srv.(ChordServer).CheckKey(ctx, req.(*StringMsg))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Chord_UploadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChordServer).UploadFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Chord_UploadFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChordServer).UploadFile(ctx, req.(*FileMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Chord_DownloadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StringMsg)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChordServer).DownloadFile(m, &chordDownloadFileServer{stream})
+}
+
+type Chord_DownloadFileServer interface {
+	Send(*BytesMsg) error
+	grpc.ServerStream
+}
+
+type chordDownloadFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *chordDownloadFileServer) Send(m *BytesMsg) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // Chord_ServiceDesc is the grpc.ServiceDesc for Chord service.
@@ -300,7 +396,17 @@ var Chord_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "CheckKey",
 			Handler:    _Chord_CheckKey_Handler,
 		},
+		{
+			MethodName: "UploadFile",
+			Handler:    _Chord_UploadFile_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "DownloadFile",
+			Handler:       _Chord_DownloadFile_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "chord/chord.proto",
 }
