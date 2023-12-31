@@ -6,11 +6,11 @@ package chord
  */
 
 import (
-	"errors"
 	"fmt"
 	// "log"
 	"math/big"
-	// "os"
+	"path/filepath"
+	"os"
 )
 
 
@@ -56,9 +56,10 @@ func (n *Node) Print() {
 	}
 
 	fmt.Println("----- Buckets -----")
-	fmt.Println("Key  |  Identifier  |  Address ")
-	for k, v := range n.Bucket {
-		fmt.Printf("%6d  |  %s\n", k, v)
+	fmt.Println("       Key  |  Indentifier")
+	for k, _ := range n.Bucket {
+		id := hashString(k)
+		fmt.Printf("%10s  |  %10d\n", k, id)
 	}
 }
 
@@ -73,7 +74,7 @@ func (n *Node) LookUp(key string) (*NodeEntry, error) {
 	}
 	ifExist, err := n.CheckKeyRPC(targetNode, key)
 	if err != nil || ifExist == false {
-		return targetNode, errors.New("File not found")
+		return targetNode, fmt.Errorf("File not found")
 	}
 	return targetNode, nil
 }
@@ -90,14 +91,19 @@ func (n *Node) Get(fileName string) (bool, error) {
 // Store a file in the Chord ring
 //
 func (n *Node) Store(filePath string) (bool, error) {
+	// Check file existence
+	if _, err := os.Stat(filePath); err != nil {
+		return false, fmt.Errorf("Error checking file '%s'.", filePath)
+	}
+
 	// Locate a node to store the file
 	fileName := filepath.Base(filePath)
-	target, err := n.lookup(fileName)
+	targetNode, err := n.lookup(fileName)
 	if err != nil {
 		return true, err
 	}
-	n.DPrintf("The file will be stored in %s\n", target.ToString())
+	n.DPrintf("The file will be stored in %s\n", targetNode.ToString())
 
 	// Transfer the file to the target node
-	return n.UploadFileRPC(target, filePath)
+	return n.UploadFileRPC(targetNode, filePath)
 }

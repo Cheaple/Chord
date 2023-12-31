@@ -6,11 +6,16 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"io"
+	"io/ioutil"
 	"log"
 	"math/big"
+	"os"
 	"path/filepath"
 	"net"
 )
+
+const chunkSize = 4096  // chunk size when transferring files through RPCs
 
 func (n *Node) startRPCService() {
 	server := grpc.NewServer()
@@ -35,6 +40,8 @@ func (n *Node) startRPCService() {
 //
 func (n *Node) LocateRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 	n.DPrintf("LocateRPC(): target address = %s", string(ety.Address))
+	
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -51,6 +58,8 @@ func (n *Node) LocateRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 //
 func (n *Node) GetSuccessorListRPC(ety *NodeEntry) (*NodeList, error) {
 	n.DPrintf("GetSuccessorListRPC(): target address = %s", string(ety.Address))
+
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -67,6 +76,8 @@ func (n *Node) GetSuccessorListRPC(ety *NodeEntry) (*NodeList, error) {
 //
 func (n *Node) GetPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 	n.DPrintf("GetPredecessorRPC(): target node = %s", ety.Address)
+
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -83,6 +94,8 @@ func (n *Node) GetPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 //
 func (n *Node) NotifyRPC(ety *NodeEntry) (bool, error) {
 	n.DPrintf("NotifyRPC(): target node = %s", ety.Address)
+
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return false, err
@@ -100,6 +113,8 @@ func (n *Node) NotifyRPC(ety *NodeEntry) (bool, error) {
 //
 func (n *Node) CheckRPC(ety *NodeEntry) (bool, error) {
 	n.DPrintf("CheckRPC(): target node = %s", ety.Address)
+
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return false, err
@@ -109,6 +124,9 @@ func (n *Node) CheckRPC(ety *NodeEntry) (bool, error) {
 	req := &EmptyMsg{}
 	ctx := context.Background()
 	boolMsg, err := client.Check(ctx, req)
+	if err != nil {
+		return false, err
+	}
 	return boolMsg.Success, err
 }
 
@@ -117,6 +135,8 @@ func (n *Node) CheckRPC(ety *NodeEntry) (bool, error) {
 //
 func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 	n.DPrintf("CheckKeyRPC(): target node = %s, key = %s", ety.Address, key)
+
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return false, err
@@ -126,6 +146,9 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 	req := &StringMsg{Str: key}
 	ctx := context.Background()
 	boolMsg, err := client.CheckKey(ctx, req)
+	if err != nil {
+		return false, err
+	}
 	return boolMsg.Success, err
 }
 
@@ -134,21 +157,61 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 //
 func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, filePath)
+
+	// Build a connection
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
 		return false, err
 	}
 	client := NewChordClient(conn)
 
-	req := &FileMsg{ Name: filepath.Base(filePath) }
+	// Open the local file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false, fmt.Errorf("Error opening file %s: %v", filePath, err)
+	}
+
+	// Open a stream-based connection 
 	ctx := context.Background()
-	boolMsg, err := client.UploadFile(ctx, req)
-	return boolMsg.Success, err
+	stream, err := client.UploadFile(ctx)
+	
+	// Allocate a buffer with `chunkSize` as the capacity
+	buffer := make([]byte, chunkSize)
+
+	// Send file data by chunk
+	for {
+		// Read a chunk from the local file
+		bytesRead, err := file.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return false, fmt.Errorf("Error reading file %s: %v", filePath, err)
+		}
+
+		// Send a chunk to the target node
+		if err := stream.Send(&FileMsg{
+			Name:    filepath.Base(filePath),
+			Content: buffer[:bytesRead],
+		}); err != nil {
+			return false, fmt.Errorf("Error sending file %s: %v", filePath, err)
+		}
+	}
+
+	// Receive a response from the target node
+	boolMsg, err := stream.CloseAndRecv()
+	if err != nil {
+		return false, err
+	}
+	if boolMsg.Success == false {
+		return boolMsg.Success, fmt.Errorf(boolMsg.ErrorMsg)
+	}
+	return true, nil
 }
 
 
 /* ******************************************************************************* *
- * ******************************* RPC Responses ********************************* */
+ * ******************************** RPC Responses ******************************** */
 
 // When receiving RPC calls, nodes run the following functions to generate RPC responses
 
@@ -195,12 +258,67 @@ func (n *Node) CheckKey(ctx context.Context, in *StringMsg) (*BoolMsg, error) {
 }
 
 // Store the uploaded file
-func (n *Node) UploadFile(ctx context.Context, in *BytesMsg) (*BoolMsg, error) {
-	n.DPrintf("UploadFile(): %+v", in)
+func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
+	n.DPrintf("UploadFile() to handle UploadFileRPC")
+	filePath := ""
+	fileName := ""
+	var tmpFile *os.File
+	defer tmpFile.Close()
+
+	// Receive uploaded file chunk by chunk
+	for idx := 0; ; idx++ {
+		// Receive one chunk
+		fileRequest, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			stream.SendAndClose(&BoolMsg{Success: false})
+			return fmt.Errorf("Error receiving file chunk:", err)
+		}
+
+		// If first chunk, create a local temp file
+		if filePath == "" {
+			fileName = fileRequest.Name
+			filePath = n.getFilePath(fileName)
+
+			// Check if the file already exists in the node's data store
+			_, ok := n.Bucket[fileName]
+			if ok {
+				return stream.SendAndClose(
+					&BoolMsg{
+						Success: false,
+						ErrorMsg: fmt.Sprintf("file already exists."),
+					},
+				)
+			}
+
+			// Create a local temp file
+			n.DPrintf("create a new file: %s\n", fileName)
+			tmpFile, err = ioutil.TempFile(".", "tmp" + fileName)
+			if err != nil {
+				stream.SendAndClose(&BoolMsg{Success: false})
+				return fmt.Errorf("Error creating temp file:", err)
+			}
+		}
+		
+		// Write a chunk to the temp file
+		n.DPrintf("%s receiving the %d chunk", tmpFile.Name(), idx)
+		_, err = tmpFile.Write(fileRequest.Content)
+		if err != nil {
+			stream.SendAndClose(&BoolMsg{Success: false})
+			return fmt.Errorf("Error writing to tmp file: %v", err)
+		}
+	}
 	
-
-
-	return &BoolMsg{ Success: true }, nil
+	// Save temp file to the local data store
+	err := os.Rename(tmpFile.Name(), filePath)
+	n.DPrintf("rename temp file '%s' to local file '%s'", tmpFile.Name, filePath)
+	if err != nil {
+		return fmt.Errorf("Error saving tmp file: %v", err)
+	}
+	n.Bucket[fileName] = 1
+	return stream.SendAndClose(&BoolMsg{Success: true})
 }
 
 //  Transfer the asked file

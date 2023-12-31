@@ -17,6 +17,7 @@ message NodeList {
 
 message BoolMsg {
     bool success = 1;
+    string errorMsg = 2;
 }
 
 message StringMsg {
@@ -53,8 +54,8 @@ service Chord {
     rpc CheckKey(StringMsg) returns (BoolMsg);
 
     // Upload a file to the target node
-    rpc UploadFile(FileMsg) returns (BoolMsg);
+    rpc UploadFile(stream FileMsg) returns (BoolMsg) {};
 
     // Download a file from the target node
-    rpc DownloadFile(StringMsg) returns (stream BytesMsg);
+    // rpc DownloadFile(StringMsg) returns (stream BytesMsg);
 }

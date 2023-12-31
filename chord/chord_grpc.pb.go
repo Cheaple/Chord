@@ -28,7 +28,6 @@ const (
 	Chord_SetPredecessor_FullMethodName   = "/Chord/SetPredecessor"
 	Chord_CheckKey_FullMethodName         = "/Chord/CheckKey"
 	Chord_UploadFile_FullMethodName       = "/Chord/UploadFile"
-	Chord_DownloadFile_FullMethodName     = "/Chord/DownloadFile"
 )
 
 // ChordClient is the client API for Chord service.
@@ -48,9 +47,7 @@ type ChordClient interface {
 	// Check whether a key exists in the target node's buckets
 	CheckKey(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (*BoolMsg, error)
 	// Upload a file to the target node
-	UploadFile(ctx context.Context, in *FileMsg, opts ...grpc.CallOption) (*BoolMsg, error)
-	// Download a file from the target node
-	DownloadFile(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (Chord_DownloadFileClient, error)
+	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Chord_UploadFileClient, error)
 }
 
 type chordClient struct {
@@ -115,41 +112,34 @@ func (c *chordClient) CheckKey(ctx context.Context, in *StringMsg, opts ...grpc.
 	return out, nil
 }
 
-func (c *chordClient) UploadFile(ctx context.Context, in *FileMsg, opts ...grpc.CallOption) (*BoolMsg, error) {
-	out := new(BoolMsg)
-	err := c.cc.Invoke(ctx, Chord_UploadFile_FullMethodName, in, out, opts...)
+func (c *chordClient) UploadFile(ctx context.Context, opts ...grpc.CallOption) (Chord_UploadFileClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Chord_ServiceDesc.Streams[0], Chord_UploadFile_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (c *chordClient) DownloadFile(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (Chord_DownloadFileClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Chord_ServiceDesc.Streams[0], Chord_DownloadFile_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &chordDownloadFileClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
+	x := &chordUploadFileClient{stream}
 	return x, nil
 }
 
-type Chord_DownloadFileClient interface {
-	Recv() (*BytesMsg, error)
+type Chord_UploadFileClient interface {
+	Send(*FileMsg) error
+	CloseAndRecv() (*BoolMsg, error)
 	grpc.ClientStream
 }
 
-type chordDownloadFileClient struct {
+type chordUploadFileClient struct {
 	grpc.ClientStream
 }
 
-func (x *chordDownloadFileClient) Recv() (*BytesMsg, error) {
-	m := new(BytesMsg)
+func (x *chordUploadFileClient) Send(m *FileMsg) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chordUploadFileClient) CloseAndRecv() (*BoolMsg, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(BoolMsg)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -173,9 +163,7 @@ type ChordServer interface {
 	// Check whether a key exists in the target node's buckets
 	CheckKey(context.Context, *StringMsg) (*BoolMsg, error)
 	// Upload a file to the target node
-	UploadFile(context.Context, *FileMsg) (*BoolMsg, error)
-	// Download a file from the target node
-	DownloadFile(*StringMsg, Chord_DownloadFileServer) error
+	UploadFile(Chord_UploadFileServer) error
 }
 
 // UnimplementedChordServer should be embedded to have forward compatible implementations.
@@ -200,11 +188,8 @@ func (UnimplementedChordServer) SetPredecessor(context.Context, *NodeEntry) (*Bo
 func (UnimplementedChordServer) CheckKey(context.Context, *StringMsg) (*BoolMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckKey not implemented")
 }
-func (UnimplementedChordServer) UploadFile(context.Context, *FileMsg) (*BoolMsg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
-}
-func (UnimplementedChordServer) DownloadFile(*StringMsg, Chord_DownloadFileServer) error {
-	return status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
+func (UnimplementedChordServer) UploadFile(Chord_UploadFileServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
 
 // UnsafeChordServer may be embedded to opt out of forward compatibility for this service.
@@ -326,43 +311,30 @@ func _Chord_CheckKey_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Chord_UploadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FileMsg)
-	if err := dec(in); err != nil {
+func _Chord_UploadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChordServer).UploadFile(&chordUploadFileServer{stream})
+}
+
+type Chord_UploadFileServer interface {
+	SendAndClose(*BoolMsg) error
+	Recv() (*FileMsg, error)
+	grpc.ServerStream
+}
+
+type chordUploadFileServer struct {
+	grpc.ServerStream
+}
+
+func (x *chordUploadFileServer) SendAndClose(m *BoolMsg) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chordUploadFileServer) Recv() (*FileMsg, error) {
+	m := new(FileMsg)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(ChordServer).UploadFile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Chord_UploadFile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).UploadFile(ctx, req.(*FileMsg))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Chord_DownloadFile_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StringMsg)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChordServer).DownloadFile(m, &chordDownloadFileServer{stream})
-}
-
-type Chord_DownloadFileServer interface {
-	Send(*BytesMsg) error
-	grpc.ServerStream
-}
-
-type chordDownloadFileServer struct {
-	grpc.ServerStream
-}
-
-func (x *chordDownloadFileServer) Send(m *BytesMsg) error {
-	return x.ServerStream.SendMsg(m)
+	return m, nil
 }
 
 // Chord_ServiceDesc is the grpc.ServiceDesc for Chord service.
@@ -396,16 +368,12 @@ var Chord_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "CheckKey",
 			Handler:    _Chord_CheckKey_Handler,
 		},
-		{
-			MethodName: "UploadFile",
-			Handler:    _Chord_UploadFile_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "DownloadFile",
-			Handler:       _Chord_DownloadFile_Handler,
-			ServerStreams: true,
+			StreamName:    "UploadFile",
+			Handler:       _Chord_UploadFile_Handler,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "chord/chord.proto",

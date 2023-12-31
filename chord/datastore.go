@@ -47,24 +47,21 @@ func (n *Node) startDataStore() {
 }
 
 //
-// Store a file in the node's data store
-//
-func (n *Node) storeFile() error {
-	
-
-	return nil
-}
-
-//
 // Get a file from the local data store  
 //
-func (n *Node) getFile(filePath string) error {
-	// Open file and pack into fileRPC
-	file, err := os.Open(filePath)
-	if err != nil {
-		// fmt.Println("Error opening file:", err)
-		return err
-	}
-	defer file.Close()
+// func (n *Node) getFile(filePath string) error {
+// 	// Open file and pack into fileRPC
+// 	file, err := os.Open(filePath)
+// 	if err != nil {
+// 		// fmt.Println("Error opening file:", err)
+// 		return err
+// 	}
+// 	defer file.Close()
 
+// }
+
+func (n *Node) getFilePath(fileName string) string {
+	nodeDir := path.Join(rootDir, string(n.Address))
+	uploadDir := path.Join(nodeDir, "upload")
+	return path.Join(uploadDir, fileName)
 }

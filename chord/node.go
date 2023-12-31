@@ -1,7 +1,6 @@
 package chord
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -172,7 +171,7 @@ func (n *Node) locateSuccessor(id *big.Int) (*NodeEntry, error) {
 		startIdx = idx - 1
 	}
 	
-	return nil, errors.New(fmt.Sprintf("Cannot locate target id: %d", id))
+	return nil, fmt.Errorf("Cannot locate target id: %d", id)
 }
 
 //
