@@ -68,6 +68,9 @@ func NewNode(args utils.Arguments) *Node {
 	// Start data store
 	node.startDataStore()
 
+	// Start TLS configuration
+	node.startTlsConfig()
+
 	// Start RPC service to communicate with other Chord nodes
 	node.startRPCService()
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,11 +19,21 @@ import (
 const chunkSize = 4096  // chunk size when transferring files through RPCs
 
 func (n *Node) startRPCService() {
-	server := grpc.NewServer()
+	// Load server certificate & private key
+	serverCreds, err := credentials.NewServerTLSFromFile(
+		n.getCerticatePath(),
+		n.getPrivateKeyPath(),
+	)
+	if err != nil {
+		log.Fatalf("Error loading server TLS keys: %s", err)
+	}
+
+	// Start server
+	server := grpc.NewServer(grpc.Creds(serverCreds))
 	RegisterChordServer(server, n)
 	n.rpcService.server = server
 
-	// Start server at the node's address
+	// Server starts listening at the node's address
 	listener, err := net.Listen("tcp", string(n.Address))
 	if err != nil {
 		log.Fatalf("Error listening at %s: %v", n.Address, err)
