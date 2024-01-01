@@ -57,5 +57,5 @@ service Chord {
     rpc UploadFile(stream FileMsg) returns (BoolMsg) {};
 
     // Download a file from the target node
-    // rpc DownloadFile(StringMsg) returns (stream BytesMsg);
+    rpc DownloadFile(StringMsg) returns (stream FileMsg);
 }

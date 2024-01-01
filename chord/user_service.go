@@ -83,8 +83,15 @@ func (n *Node) LookUp(key string) (*NodeEntry, error) {
 // Download a file from the Chord ring
 //
 func (n *Node) Get(fileName string) (bool, error) {
+	// Locate a node which stores the file
+	targetNode, err := n.lookup(fileName)
+	if err != nil {
+		return true, err
+	}
+	n.DPrintf("The file should be stored in %s\n", targetNode.ToString())
 
-	return true, nil
+	// Download the file from the target node
+	return n.DownloadFileRPC(targetNode, fileName)
 }
 
 //

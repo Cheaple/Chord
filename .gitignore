@@ -21,6 +21,7 @@
 go.work
 
 # use data
+test*
 test.txt
 main/data/*
 
