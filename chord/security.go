@@ -18,7 +18,7 @@ import (
 
 func (n *Node) startTlsConfig() error {
 	// Check certificate existence
-	cerPath := n.getCerticatePath()
+	cerPath := n.getCertificatePath()
 	keyPath := n.getPrivateKeyPath()
 	if _, err := os.Stat(cerPath); err == nil {
 		if _, err := os.Stat(keyPath); err == nil {
@@ -76,10 +76,25 @@ func (n *Node) startTlsConfig() error {
 	return nil
 }
 
-func (n *Node) getCerticatePath() string {
-	return path.Join(n.baseDir, "server.crt")
+//
+// Return path of the local node's certificate
+//
+func (n *Node) getCertificatePath() string {
+	return path.Join(n.baseDir, "certificate", fmt.Sprintf("public-%d.crt", n.Id))
 }
 
+//
+// Return path of the local node's private key
+//
 func (n *Node) getPrivateKeyPath() string {
-	return path.Join(n.baseDir, "server.key")
+	return path.Join(n.baseDir, "certificate", fmt.Sprintf("private-%d.key", n.Id))
+}
+
+//
+// Load target node's certificate
+// if not in the local data store, ask for it via RPC
+//
+func (n *Node) getNodeCertificatePath(ety *NodeEntry) string {
+	id := new(big.Int).SetBytes(ety.Identifier)
+	return path.Join(n.baseDir, "certificate", fmt.Sprintf("public-%d.crt", id))
 }

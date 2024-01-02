@@ -36,7 +36,11 @@ func (n *Node) startDataStore() {
 		} 
 		err = os.Mkdir(path.Join(nodeDir, "upload"), os.ModePerm)
 		if err != nil {
-			log.Fatalf("Error creating node folder: " + err.Error())
+			log.Fatalf("Error creating node upload folder: " + err.Error())
+		}
+		err = os.Mkdir(path.Join(nodeDir, "certificate"), os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error creating node certificate folder: " + err.Error())
 		}
 	} else { 
 		// Read a existing folder

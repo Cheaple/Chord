@@ -274,7 +274,7 @@ func (n *Node) fixFinger(next int) int {
 	add := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(next) - 1), nil)
 	nextId := new(big.Int).Add(cur, add)
 	nextId = new(big.Int).Mod(nextId, hashMod)
-	n.DPrintf("fixFinger(): next id = %d", nextId)
+	// n.DPrintf("fixFinger(): next id = %d", nextId)
 
 	// Find a successor node that stores the next finger id
 	finger, err := n.locateSuccessor(nextId)
@@ -285,7 +285,7 @@ func (n *Node) fixFinger(next int) int {
 
 	// Update finger entry
 	n.FingerTable.set(next, finger)
-	n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
+	// n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
 	return next % M + 1  // next in [1, M]
 
 }

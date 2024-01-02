@@ -4,6 +4,7 @@ package chord
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -19,28 +20,39 @@ import (
 const chunkSize = 4096  // chunk size when transferring files through RPCs
 
 func (n *Node) startRPCService() {
-	// Load certificate & private key
-	serverCreds, err := credentials.NewServerTLSFromFile(
-		n.getCerticatePath(),
-		n.getPrivateKeyPath(),
-	)
-	if err != nil {
-		log.Fatalf("Error loading TLS keys: %s", err)
-	}
-
-	// Start server
-	server := grpc.NewServer(grpc.Creds(serverCreds))
-	// server := grpc.NewServer()
-	RegisterChordServer(server, n)
-	n.rpcService.server = server
-
 	// Server starts listening at the node's address
 	listener, err := net.Listen("tcp", string(n.Address))
 	if err != nil {
 		log.Fatalf("Error listening at %s: %v", n.Address, err)
 	}
 	fmt.Println("Chord node starts listening at %s", n.Address)
-	go server.Serve(listener)
+
+	// Listen to TCP connections for normal RPCs
+	go func() {
+		server := grpc.NewServer()
+		RegisterChordServer(server, n)
+		n.rpcService.server = server
+		server.Serve(listener)
+	}()
+
+	// Listen to TLS connections for file transfer
+	go func() {
+		// Load certificate & private key
+		certificate, err := tls.LoadX509KeyPair(
+			n.getCertificatePath(), n.getPrivateKeyPath(),
+		)
+		if err != nil {
+			log.Fatalf("Error loading TLS certificate & key: %s", err)
+		}
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{certificate},
+		}
+		creds := credentials.NewTLS(tlsConfig)
+
+		tlsServer := grpc.NewServer(grpc.Creds(creds))
+		tlsServer.Serve(listener)
+	}()
+
 }
 
 //
@@ -49,7 +61,7 @@ func (n *Node) startRPCService() {
 func (n *Node) makeClient(ety *NodeEntry) (ChordClient, error) {
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error connecting target node: %s", err)
 	}
 	return NewChordClient(conn), nil
 }
@@ -58,20 +70,26 @@ func (n *Node) makeClient(ety *NodeEntry) (ChordClient, error) {
 // Build a TLS connection for user file transfer RPCs
 //
 func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
-	// Load certificate & private key
-	// TODO
+	// Load certificate of the target node
+	targetCerPath := n.getNodeCertificatePath(ety)
+	if _, err := os.Stat(targetCerPath); err != nil {
+		// if the target certificate not in the local data store
+		// ask for the certificate from the target node
+		if err := n.GetCertificateRPC(ety); err != nil {
+			return nil, fmt.Errorf("Error getting TLS certificate: %s", err)
+		}
+	}
 	clientCreds, err := credentials.NewClientTLSFromFile(
-		n.getCerticatePath(),
-		// n.getPrivateKeyPath(),
+		targetCerPath,
 		"",
 	)
 	if err != nil {
-		log.Fatalf("Error loading TLS keys: %s", err)
+		return nil, fmt.Errorf("Error loading TLS certificate: %s", err)
 	}
 	
 	conn, err := grpc.Dial(string(ety.Address), grpc.WithTransportCredentials(clientCreds))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error connecting target node: %s", err)
 	}
 	return NewChordClient(conn), nil
 }
@@ -197,7 +215,7 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, filePath)
 
-	// Build a secure connection
+	// Build a secure connection, using TLS
 	client, err := n.makeTlsClient(ety)
 	if err != nil {
 		return false, err
@@ -254,7 +272,7 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 func (n *Node) DownloadFileRPC(ety *NodeEntry, fileName string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, fileName)
 
-	// Build a connection
+	// Build a connection, using TLS
 	client, err := n.makeTlsClient(ety)
 	if err != nil {
 		return false, err
@@ -301,6 +319,63 @@ func (n *Node) DownloadFileRPC(ety *NodeEntry, fileName string) (bool, error) {
 		return false, fmt.Errorf("Error saving tmp file: %v", err)
 	}
 	return true, nil
+}
+
+//
+// Download a certificate from the target node
+//
+func (n *Node) GetCertificateRPC(ety *NodeEntry) error {
+	n.DPrintf("GetCertificateRPC(): target node = %s", ety.Address)
+	filePath := n.getNodeCertificatePath(ety)
+	fileName :=  filepath.Base(filePath)
+
+	// Build a connection
+	client, err := n.makeClient(ety)
+	if err != nil {
+		return err
+	}
+
+	// Open a stream-based connection 
+	req := &EmptyMsg{}
+	ctx := context.Background()
+	stream, err := client.GetCertificate(ctx, req)
+	
+	// Create a local temp file
+	n.DPrintf("create a new file: %s\n", fileName)
+	tmpFile, err := ioutil.TempFile(".", "tmp-" + fileName)
+	if err != nil {
+		return fmt.Errorf("Error creating temp file:", err)
+	}
+
+	// Receive uploaded file chunk by chunk
+	for idx := 0; ; idx++ {
+		// Receive one chunk
+		fileRequest, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			os.Remove(tmpFile.Name())
+			return fmt.Errorf("Error receiving file chunk:", err)
+		}
+		
+		// Write a chunk to the temp file
+		n.DPrintf("%s receiving the %d chunk", tmpFile.Name(), idx)
+		_, err = tmpFile.Write(fileRequest.Content)
+		if err != nil {
+			os.Remove(tmpFile.Name())
+			return fmt.Errorf("Error writing to tmp file: %v", err)
+		}
+	}
+	
+	// Save temp file to the local data store
+	err = os.Rename(tmpFile.Name(), filePath)
+	n.DPrintf("rename temp file '%s' to local file '%s'", tmpFile.Name, filePath)
+	if err != nil {
+		os.Remove(tmpFile.Name())
+		return fmt.Errorf("Error saving tmp file: %v", err)
+	}
+	return nil
 }
 
 
@@ -477,6 +552,47 @@ func (n *Node) DownloadFile(in *StringMsg, stream Chord_DownloadFileServer) erro
 			Content: buffer[:bytesRead],
 		}); err != nil {
 			return fmt.Errorf("Error sending file %s: %v", filePath, err)
+		}
+	}
+
+	return nil
+}
+
+//
+// Handler for GetCertificate rpc service
+// Transfer the asked file
+//
+func (n *Node) GetCertificate(in *EmptyMsg, stream Chord_GetCertificateServer) error {
+	n.DPrintf("GetCertificate(): %+v", in)
+	cerPath := n.getCertificatePath()
+
+	// Open the local file
+	file, err := os.Open(cerPath)
+	if err != nil {
+		return fmt.Errorf("Error opening file %s: %v", cerPath, err)
+	}
+	defer file.Close()
+	
+	// Allocate a buffer with `chunkSize` as the capacity
+	buffer := make([]byte, chunkSize)
+
+	// Send file data by chunk
+	for {
+		// Read a chunk from the local file
+		bytesRead, err := file.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("Error reading file %s: %v", cerPath, err)
+		}
+
+		// Send a chunk to the target node
+		if err := stream.Send(&FileMsg{
+			Name:    cerPath,
+			Content: buffer[:bytesRead],
+		}); err != nil {
+			return fmt.Errorf("Error sending file %s: %v", cerPath, err)
 		}
 	}
 

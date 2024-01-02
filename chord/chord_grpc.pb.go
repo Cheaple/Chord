@@ -29,6 +29,7 @@ const (
 	Chord_CheckKey_FullMethodName         = "/Chord/CheckKey"
 	Chord_UploadFile_FullMethodName       = "/Chord/UploadFile"
 	Chord_DownloadFile_FullMethodName     = "/Chord/DownloadFile"
+	Chord_GetCertificate_FullMethodName   = "/Chord/GetCertificate"
 )
 
 // ChordClient is the client API for Chord service.
@@ -51,6 +52,8 @@ type ChordClient interface {
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Chord_UploadFileClient, error)
 	// Download a file from the target node
 	DownloadFile(ctx context.Context, in *StringMsg, opts ...grpc.CallOption) (Chord_DownloadFileClient, error)
+	// Get the certificate from the target node
+	GetCertificate(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (Chord_GetCertificateClient, error)
 }
 
 type chordClient struct {
@@ -181,6 +184,38 @@ func (x *chordDownloadFileClient) Recv() (*FileMsg, error) {
 	return m, nil
 }
 
+func (c *chordClient) GetCertificate(ctx context.Context, in *EmptyMsg, opts ...grpc.CallOption) (Chord_GetCertificateClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Chord_ServiceDesc.Streams[2], Chord_GetCertificate_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chordGetCertificateClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Chord_GetCertificateClient interface {
+	Recv() (*FileMsg, error)
+	grpc.ClientStream
+}
+
+type chordGetCertificateClient struct {
+	grpc.ClientStream
+}
+
+func (x *chordGetCertificateClient) Recv() (*FileMsg, error) {
+	m := new(FileMsg)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ChordServer is the server API for Chord service.
 // All implementations should embed UnimplementedChordServer
 // for forward compatibility
@@ -201,6 +236,8 @@ type ChordServer interface {
 	UploadFile(Chord_UploadFileServer) error
 	// Download a file from the target node
 	DownloadFile(*StringMsg, Chord_DownloadFileServer) error
+	// Get the certificate from the target node
+	GetCertificate(*EmptyMsg, Chord_GetCertificateServer) error
 }
 
 // UnimplementedChordServer should be embedded to have forward compatible implementations.
@@ -230,6 +267,9 @@ func (UnimplementedChordServer) UploadFile(Chord_UploadFileServer) error {
 }
 func (UnimplementedChordServer) DownloadFile(*StringMsg, Chord_DownloadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method DownloadFile not implemented")
+}
+func (UnimplementedChordServer) GetCertificate(*EmptyMsg, Chord_GetCertificateServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetCertificate not implemented")
 }
 
 // UnsafeChordServer may be embedded to opt out of forward compatibility for this service.
@@ -398,6 +438,27 @@ func (x *chordDownloadFileServer) Send(m *FileMsg) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Chord_GetCertificate_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(EmptyMsg)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChordServer).GetCertificate(m, &chordGetCertificateServer{stream})
+}
+
+type Chord_GetCertificateServer interface {
+	Send(*FileMsg) error
+	grpc.ServerStream
+}
+
+type chordGetCertificateServer struct {
+	grpc.ServerStream
+}
+
+func (x *chordGetCertificateServer) Send(m *FileMsg) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Chord_ServiceDesc is the grpc.ServiceDesc for Chord service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -439,6 +500,11 @@ var Chord_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "DownloadFile",
 			Handler:       _Chord_DownloadFile_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetCertificate",
+			Handler:       _Chord_GetCertificate_Handler,
 			ServerStreams: true,
 		},
 	},

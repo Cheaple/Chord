@@ -58,4 +58,7 @@ service Chord {
 
     // Download a file from the target node
     rpc DownloadFile(StringMsg) returns (stream FileMsg);
+
+    // Get the certificate from the target node
+    rpc GetCertificate(EmptyMsg) returns (stream FileMsg);
 }
