@@ -42,6 +42,10 @@ func (n *Node) startDataStore() {
 		if err != nil {
 			log.Fatalf("Error creating node certificate folder: " + err.Error())
 		}
+		err = os.Mkdir(path.Join(nodeDir, "backup"), os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error creating node backup folder: " + err.Error())
+		}
 	} else { 
 		// Read a existing folder
 		// Read node buckets from local files
