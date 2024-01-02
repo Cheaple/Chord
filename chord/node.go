@@ -47,7 +47,7 @@ func NewNode(args utils.Arguments) *Node {
 		node.Id = new(big.Int)
 		node.Id.SetString(args.IdentifierStr, 16)  // string of 16-bit int to big.Int
 	}
-	node.Entry = newNodeEntry(node.Id, node.Address)
+	node.Entry = newNodeEntry(node.Id, node.Address, node.TlsAddress)
 
 	node.FingerTable = node.newNodeList(M + 1)  // one more element for the node itself; real fingers start from index 1
 	node.Predecessor = &NodeEntry{}  // set empty node entry
@@ -131,7 +131,7 @@ func NewNode(args utils.Arguments) *Node {
 //
 func (n *Node) joinChord(joinedAddress NodeAddress) error {
 	// Target Chord ring
-	target := newNodeEntry(hashString(string(joinedAddress)), joinedAddress)
+	target := newNodeEntry(hashString(string(joinedAddress)), joinedAddress, "")
 
 	n.Predecessor = &NodeEntry{}  // set empty node entry
 

@@ -21,7 +21,7 @@ test2:
 	$(BINARY_NAME) -a 127.0.0.1 -p 8002 --ja 127.0.0.1 --jp 8000 --ts 3000 --tff 1000 --tcp 3000 -r 4
 
 test3:
-	$(BINARY_NAME) -a 127.0.0.1 -p 8004 --ja 127.0.0.1 --jp 8002 --ts 3000 --tff 1000 --tcp 3000 -r 4
+	$(BINARY_NAME) -a 127.0.0.1 -p 8006 --ja 127.0.0.1 --jp 8002 --ts 3000 --tff 1000 --tcp 3000 -r 4
 
 clean:
 	rm -f $(BINARY_NAME)

@@ -102,12 +102,12 @@ func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error loading TLS certificate: %s", err)
 	}
-	
+
+	// Connect
 	conn, err := grpc.Dial(string(ety.TlsAddress), grpc.WithTransportCredentials(clientCreds))
 	if err != nil {
 		return nil, fmt.Errorf("Error connecting target node via TLS: %s", err)
 	}
-	defer conn.Close()
 	return NewChordClient(conn), nil
 }
 
@@ -246,7 +246,6 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("Error opening file %s: %v", filePath, err)
 	}
-	defer file.Close()
 
 	// Open a stream-based connection 
 	ctx := context.Background()

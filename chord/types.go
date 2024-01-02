@@ -62,10 +62,11 @@ type GRPCService struct {
 //
 // Init NodeEntry
 //
-func newNodeEntry(id *big.Int, address NodeAddress) *NodeEntry {
+func newNodeEntry(id *big.Int, address, tlsAddress NodeAddress) *NodeEntry {
 	entry := &NodeEntry{}
     entry.Identifier = id.Bytes()
     entry.Address = string(address)
+    entry.TlsAddress = string(tlsAddress)
     return entry
 }
 
