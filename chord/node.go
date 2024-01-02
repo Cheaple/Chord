@@ -38,6 +38,7 @@ func NewNode(args utils.Arguments) *Node {
 		verbose: args.Verbose,
 	}
 
+	node.IP = args.Address
 	node.Address = NodeAddress(fmt.Sprintf("%s:%d", args.Address, args.Port))
 	if args.IdentifierStr == "" {
 		node.Id = hashString(string(node.Address))
@@ -52,6 +53,15 @@ func NewNode(args utils.Arguments) *Node {
 	node.Successors = node.newNodeList(node.lenSuccessors)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[string]int)
 
+	// Start data store
+	node.startDataStore()
+
+	// Start TLS configuration
+	node.startTlsConfig()
+
+	// Start RPC service to communicate with other Chord nodes
+	node.startRPCService()
+
 	// Join or Create a Chord ring
 	if args.JoinAddress != "" {
 		joinAddress := NodeAddress(fmt.Sprintf("%s:%d", args.JoinAddress, args.JoinPort))
@@ -64,15 +74,6 @@ func NewNode(args utils.Arguments) *Node {
 		fmt.Println("Creating a new Chord ring at node", node.Address)
 		// node.create()
 	}
-
-	// Start data store
-	node.startDataStore()
-
-	// Start TLS configuration
-	node.startTlsConfig()
-
-	// Start RPC service to communicate with other Chord nodes
-	node.startRPCService()
 
 	// Periodically stabilize
 	go func() {

@@ -19,17 +19,18 @@ import (
 const chunkSize = 4096  // chunk size when transferring files through RPCs
 
 func (n *Node) startRPCService() {
-	// Load server certificate & private key
+	// Load certificate & private key
 	serverCreds, err := credentials.NewServerTLSFromFile(
 		n.getCerticatePath(),
 		n.getPrivateKeyPath(),
 	)
 	if err != nil {
-		log.Fatalf("Error loading server TLS keys: %s", err)
+		log.Fatalf("Error loading TLS keys: %s", err)
 	}
 
 	// Start server
 	server := grpc.NewServer(grpc.Creds(serverCreds))
+	// server := grpc.NewServer()
 	RegisterChordServer(server, n)
 	n.rpcService.server = server
 
@@ -42,6 +43,39 @@ func (n *Node) startRPCService() {
 	go server.Serve(listener)
 }
 
+//
+// Build a TCP connection for normal RPCs
+//
+func (n *Node) makeClient(ety *NodeEntry) (ChordClient, error) {
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	return NewChordClient(conn), nil
+}
+
+//
+// Build a TLS connection for user file transfer RPCs
+//
+func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
+	// Load certificate & private key
+	// TODO
+	clientCreds, err := credentials.NewClientTLSFromFile(
+		n.getCerticatePath(),
+		// n.getPrivateKeyPath(),
+		"",
+	)
+	if err != nil {
+		log.Fatalf("Error loading TLS keys: %s", err)
+	}
+	
+	conn, err := grpc.Dial(string(ety.Address), grpc.WithTransportCredentials(clientCreds))
+	if err != nil {
+		return nil, err
+	}
+	return NewChordClient(conn), nil
+}
+
 /* ******************************************************************************* *
  * *********************************** RPC Calls ********************************* */
 
@@ -51,13 +85,12 @@ func (n *Node) startRPCService() {
 //
 func (n *Node) LocateRPC(ety *NodeEntry, id *big.Int) (*NodeEntry, error) {
 	n.DPrintf("LocateRPC(): target address = %s", string(ety.Address))
-	
+
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return nil, err
 	}
-	client := NewChordClient(conn)
 
 	req := &BytesMsg{ Data: id.Bytes() }
 	ctx := context.Background()
@@ -71,11 +104,10 @@ func (n *Node) GetSuccessorListRPC(ety *NodeEntry) (*NodeList, error) {
 	n.DPrintf("GetSuccessorListRPC(): target address = %s", string(ety.Address))
 
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return nil, err
 	}
-	client := NewChordClient(conn)
 
 	req := &EmptyMsg{}
 	ctx := context.Background()
@@ -89,11 +121,10 @@ func (n *Node) GetPredecessorRPC(ety *NodeEntry) (*NodeEntry, error) {
 	n.DPrintf("GetPredecessorRPC(): target node = %s", ety.Address)
 
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return nil, err
 	}
-	client := NewChordClient(conn)
 
 	req := &EmptyMsg{}
 	ctx := context.Background()
@@ -107,11 +138,10 @@ func (n *Node) NotifyRPC(ety *NodeEntry) (bool, error) {
 	n.DPrintf("NotifyRPC(): target node = %s", ety.Address)
 
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return false, err
 	}
-	client := NewChordClient(conn)
 
 	req := n.Entry
 	ctx := context.Background()
@@ -126,11 +156,10 @@ func (n *Node) CheckRPC(ety *NodeEntry) (bool, error) {
 	n.DPrintf("CheckRPC(): target node = %s", ety.Address)
 
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return false, err
 	}
-	client := NewChordClient(conn)
 
 	req := &EmptyMsg{}
 	ctx := context.Background()
@@ -148,11 +177,10 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 	n.DPrintf("CheckKeyRPC(): target node = %s, key = %s", ety.Address, key)
 
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return false, err
 	}
-	client := NewChordClient(conn)
 
 	req := &StringMsg{Str: key}
 	ctx := context.Background()
@@ -164,17 +192,16 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 }
 
 //
-// Store a file in the target node
+// Store a file in the target node, using TLS
 //
 func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, filePath)
 
-	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	// Build a secure connection
+	client, err := n.makeTlsClient(ety)
 	if err != nil {
 		return false, err
 	}
-	client := NewChordClient(conn)
 
 	// Open the local file
 	file, err := os.Open(filePath)
@@ -222,17 +249,16 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 }
 
 //
-// Download a file from the target node
+// Download a file from the target node, using TLS
 //
 func (n *Node) DownloadFileRPC(ety *NodeEntry, fileName string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, fileName)
 
 	// Build a connection
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithInsecure())
+	client, err := n.makeTlsClient(ety)
 	if err != nil {
 		return false, err
 	}
-	client := NewChordClient(conn)
 
 	// Open a stream-based connection 
 	req := &StringMsg{Str: fileName}

@@ -19,7 +19,8 @@ type NodeAddress string
 type Node struct {
 	// Name       	string   		    // Name: IP:Port or User specified Name. Exp: [N]14
 	Id      	    *big.Int 			// Hash(Address) -> Chord space Identifier
-    Address    	    NodeAddress         // local address
+    IP              string              // ip address
+    Address    	    NodeAddress         // local address (ip + port)
     Entry           *NodeEntry          // Node Entry
 
     FingerTable     *NodeList           // Finger Table

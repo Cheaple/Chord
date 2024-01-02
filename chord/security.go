@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"net"
 	"os"
 	"path"
 	"time"
@@ -34,13 +35,16 @@ func (n *Node) startTlsConfig() error {
 	// Build certificate template
 	template := x509.Certificate{
 		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: string(n.Address)},  // certificate name: node's address
+		Subject:               pkix.Name{
+			Organization:  []string{"Chalmers"},
+		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(1, 0, 0),  // period of validity: 1 year
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
+	template.IPAddresses = []net.IP{net.ParseIP(n.IP)}
 
 	// Create certificate using the template
 	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
