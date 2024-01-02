@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,18 +18,8 @@ import (
 const chunkSize = 4096  // chunk size when transferring files through RPCs
 
 func (n *Node) startRPCService() {
-	// Load certificate & private key
-	serverCreds, err := credentials.NewServerTLSFromFile(
-		n.getCerticatePath(),
-		n.getPrivateKeyPath(),
-	)
-	if err != nil {
-		log.Fatalf("Error loading TLS keys: %s", err)
-	}
-
 	// Start server
-	server := grpc.NewServer(grpc.Creds(serverCreds))
-	// server := grpc.NewServer()
+	server := grpc.NewServer()
 	RegisterChordServer(server, n)
 	n.rpcService.server = server
 
@@ -54,27 +43,6 @@ func (n *Node) makeClient(ety *NodeEntry) (ChordClient, error) {
 	return NewChordClient(conn), nil
 }
 
-//
-// Build a TLS connection for user file transfer RPCs
-//
-func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
-	// Load certificate & private key
-	// TODO
-	clientCreds, err := credentials.NewClientTLSFromFile(
-		n.getCerticatePath(),
-		// n.getPrivateKeyPath(),
-		"",
-	)
-	if err != nil {
-		log.Fatalf("Error loading TLS keys: %s", err)
-	}
-	
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithTransportCredentials(clientCreds))
-	if err != nil {
-		return nil, err
-	}
-	return NewChordClient(conn), nil
-}
 
 /* ******************************************************************************* *
  * *********************************** RPC Calls ********************************* */
@@ -192,13 +160,13 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 }
 
 //
-// Store a file in the target node, using TLS
+// Store a file in the target node
 //
 func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, filePath)
 
 	// Build a secure connection
-	client, err := n.makeTlsClient(ety)
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return false, err
 	}
@@ -249,13 +217,13 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 }
 
 //
-// Download a file from the target node, using TLS
+// Download a file from the target node
 //
 func (n *Node) DownloadFileRPC(ety *NodeEntry, fileName string) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, fileName)
 
 	// Build a connection
-	client, err := n.makeTlsClient(ety)
+	client, err := n.makeClient(ety)
 	if err != nil {
 		return false, err
 	}
