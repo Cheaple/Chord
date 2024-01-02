@@ -20,19 +20,21 @@ import (
 const chunkSize = 4096  // chunk size when transferring files through RPCs
 
 func (n *Node) startRPCService() {
-	// Server starts listening at the node's address
-	listener, err := net.Listen("tcp", string(n.Address))
-	if err != nil {
-		log.Fatalf("Error listening at %s: %v", n.Address, err)
-	}
-	fmt.Println("Chord node starts listening at %s", n.Address)
-
 	// Listen to TCP connections for normal RPCs
 	go func() {
+		// Server starts listening at the node's address
+		listener, err := net.Listen("tcp", string(n.Address))
+		if err != nil {
+			log.Fatalf("Error listening at %s: %v", n.Address, err)
+		}
+		// fmt.Println("Chord node starts listening at %s", n.Address)
+
 		server := grpc.NewServer()
 		RegisterChordServer(server, n)
 		n.rpcService.server = server
-		server.Serve(listener)
+		if err := server.Serve(listener); err != nil {
+			log.Fatalf("Error serving: %v", err)
+		}
 	}()
 
 	// Listen to TLS connections for file transfer
@@ -46,11 +48,24 @@ func (n *Node) startRPCService() {
 		}
 		tlsConfig := &tls.Config{
 			Certificates: []tls.Certificate{certificate},
+			ClientAuth:   tls.NoClientCert,
 		}
-		creds := credentials.NewTLS(tlsConfig)
+		opts := []grpc.ServerOption{
+			grpc.Creds(credentials.NewTLS(tlsConfig)),
+		}
 
-		tlsServer := grpc.NewServer(grpc.Creds(creds))
-		tlsServer.Serve(listener)
+		// Server starts listening at the node's address
+		tlsListner, err := net.Listen("tcp", string(n.TlsAddress))
+		if err != nil {
+			log.Fatalf("Error listening at %s: %v", n.TlsAddress, err)
+		}
+		// fmt.Println("Chord node starts listening at %s", n.TlsAddress)
+
+		tlsServer := grpc.NewServer(opts...)
+		RegisterChordServer(tlsServer, n)
+		if err := tlsServer.Serve(tlsListner); err != nil {
+			log.Fatalf("Error serving TLS: %v", err)
+		}
 	}()
 
 }
@@ -72,6 +87,7 @@ func (n *Node) makeClient(ety *NodeEntry) (ChordClient, error) {
 func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
 	// Load certificate of the target node
 	targetCerPath := n.getNodeCertificatePath(ety)
+	fmt.Println(targetCerPath)
 	if _, err := os.Stat(targetCerPath); err != nil {
 		// if the target certificate not in the local data store
 		// ask for the certificate from the target node
@@ -87,10 +103,11 @@ func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
 		return nil, fmt.Errorf("Error loading TLS certificate: %s", err)
 	}
 	
-	conn, err := grpc.Dial(string(ety.Address), grpc.WithTransportCredentials(clientCreds))
+	conn, err := grpc.Dial(string(ety.TlsAddress), grpc.WithTransportCredentials(clientCreds))
 	if err != nil {
-		return nil, fmt.Errorf("Error connecting target node: %s", err)
+		return nil, fmt.Errorf("Error connecting target node via TLS: %s", err)
 	}
+	defer conn.Close()
 	return NewChordClient(conn), nil
 }
 
@@ -164,6 +181,9 @@ func (n *Node) NotifyRPC(ety *NodeEntry) (bool, error) {
 	req := n.Entry
 	ctx := context.Background()
 	boolMsg, err := client.SetPredecessor(ctx, req)
+	if err != nil {
+		return false, err
+	}
 	return boolMsg.Success, err
 }
 

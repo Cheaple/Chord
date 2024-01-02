@@ -21,6 +21,7 @@ type Node struct {
 	Id      	    *big.Int 			// Hash(Address) -> Chord space Identifier
     IP              string              // ip address
     Address    	    NodeAddress         // local address (ip + port)
+    TlsAddress      NodeAddress         // local tls address
     Entry           *NodeEntry          // Node Entry
 
     FingerTable     *NodeList           // Finger Table

@@ -40,6 +40,7 @@ func NewNode(args utils.Arguments) *Node {
 
 	node.IP = args.Address
 	node.Address = NodeAddress(fmt.Sprintf("%s:%d", args.Address, args.Port))
+	node.TlsAddress = NodeAddress(fmt.Sprintf("%s:%d", args.Address, args.Port + 1))
 	if args.IdentifierStr == "" {
 		node.Id = hashString(string(node.Address))
 	} else {

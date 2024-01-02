@@ -9,6 +9,7 @@ message EmptyMsg {}
 message NodeEntry {
     bytes identifier = 1;
     string address = 2;
+    string tlsAddress = 3;
 }
 
 message NodeList {
