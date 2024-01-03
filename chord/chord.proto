@@ -32,6 +32,7 @@ message BytesMsg {
 message FileMsg {
     string name = 1;
     bytes content = 2;
+    bool backup = 3;
 }
 
 

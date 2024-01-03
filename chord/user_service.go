@@ -113,5 +113,5 @@ func (n *Node) Store(filePath string) (bool, error) {
 	n.DPrintf("The file will be stored in %s\n", targetNode.ToString())
 
 	// Transfer the file to the target node
-	return n.UploadFileRPC(targetNode, filePath)
+	return n.UploadFileRPC(targetNode, filePath, false)
 }

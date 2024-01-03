@@ -30,6 +30,7 @@ type Node struct {
     lenSuccessors   int                 // length of successor list
 
     Bucket 		    map[string]int      // Buckets to store files
+    Backup          map[string]int      // Buckets to back up files of the predecessor
 
     rpcService      GRPCService         // Service for communications between Chord nodes
 

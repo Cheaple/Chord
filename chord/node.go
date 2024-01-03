@@ -53,6 +53,7 @@ func NewNode(args utils.Arguments) *Node {
 	node.Predecessor = &NodeEntry{}  // set empty node entry
 	node.Successors = node.newNodeList(node.lenSuccessors)  // one more element for the node itself; real successors start from index 1
 	node.Bucket = make(map[string]int)
+	node.Backup = make(map[string]int)
 
 	// Start data store
 	node.startDataStore()
@@ -119,6 +120,20 @@ func NewNode(args utils.Arguments) *Node {
 		}
 	}()
 
+	// Periodically send local buckets to its first successor
+	go func() {
+		ticker := time.NewTicker(time.Duration(args.CheckPredTime) * time.Millisecond)
+		for {
+			select {
+			case <-ticker.C:
+				node.backup()
+			case <-node.doneCh:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
 	return node
 }
 
@@ -162,7 +177,7 @@ func (n *Node) locateSuccessor(id *big.Int) (*NodeEntry, error) {
 	startIdx := M
 	for startIdx >= 1 {
 		pred, idx := n.closestPreceding(id, startIdx)
-		if pred == n.Entry {
+		if nodeEqual(pred, n.Entry) {
 			return pred, nil
 		}
 		res, err := n.LocateRPC(pred, id)
@@ -302,8 +317,33 @@ func (n *Node) checkPredecessor() error {
 	}
 	_, err := n.CheckRPC(n.Predecessor)
 	if err != nil {
+		// predecessor failure
 		n.DPrintf("checkPredecessor(): set n.predecessor = nil")
 		n.Predecessor = &NodeEntry{}  // set empty node entry
+
+		// TODO
+		// move backup files of the failed predecessor to the local buckets
+
 	}
+
+	return nil
+}
+
+//
+// Each node periodically calls backup()
+// to send local files to its first successor
+//
+func (n *Node) backup() error {
+	if nodeEqual(n.Successors.get(1), n.Entry) {
+		// if the first successor is the node itself, do not backup
+		return nil
+	}
+
+	// TODO
+	// call UploadRPC to send local files to the first successor
+	for fileName, _ := range n.Bucket {
+		n.UploadFileRPC(n.Successors.get(1), n.getFilePath(fileName), true)
+	}
+	
 	return nil
 }

@@ -63,8 +63,18 @@ func (n *Node) startDataStore() {
 	n.baseDir = nodeDir
 }
 
-
+//
+// Return the complete path of a given file
+//
 func (n *Node) getFilePath(fileName string) string {
 	uploadDir := path.Join(n.baseDir, "upload")
 	return path.Join(uploadDir, fileName)
+}
+
+//
+// Return the complete path of a given backup file
+//
+func (n *Node) getBackupPath(fileName string) string {
+	backupDir := path.Join(n.baseDir, "backup")
+	return path.Join(backupDir, fileName)
 }

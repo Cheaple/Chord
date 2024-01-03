@@ -232,7 +232,7 @@ func (n *Node) CheckKeyRPC(ety *NodeEntry, key string) (bool, error) {
 //
 // Store a file in the target node, using TLS
 //
-func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
+func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string, backup bool) (bool, error) {
 	n.DPrintf("UploadFileRPC(): target node = %s, filePath = %s", ety.Address, filePath)
 
 	// Build a secure connection, using TLS
@@ -269,6 +269,7 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string) (bool, error) {
 		if err := stream.Send(&FileMsg{
 			Name:    filepath.Base(filePath),
 			Content: buffer[:bytesRead],
+			Backup: backup,
 		}); err != nil {
 			return false, fmt.Errorf("Error sending file %s: %v", filePath, err)
 		}
@@ -488,6 +489,9 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 		if filePath == "" {
 			fileName = fileRequest.Name
 			filePath = n.getFilePath(fileName)
+			if fileRequest.Backup == true {
+				filePath = n.getBackupPath(fileName)
+			}
 
 			// Check if the file already exists in the node's data store
 			_, ok := n.Bucket[fileName]
