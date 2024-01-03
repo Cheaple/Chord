@@ -495,6 +495,9 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 
 			// Check if the file already exists in the node's data store
 			_, ok := n.Bucket[fileName]
+			if fileRequest.Backup == true {
+				_, ok = n.Backup[fileName]
+			}
 			if ok {
 				return stream.SendAndClose(
 					&BoolMsg{
@@ -529,7 +532,11 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 	if err != nil {
 		return fmt.Errorf("Error saving tmp file: %v", err)
 	}
-	n.Bucket[fileName] = 1
+	if fileRequest.Backup == true {
+		n.Backup[fileName] == 1
+	} else {
+		n.Bucket[fileName] = 1
+	} 
 	return stream.SendAndClose(&BoolMsg{Success: true})
 }
 
