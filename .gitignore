@@ -24,6 +24,8 @@ go.work
 test*
 test.txt
 main/data/*
+*.crt
+*.key
 
 # main .exe
 chord.exe

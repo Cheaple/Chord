@@ -367,8 +367,8 @@ func (n *Node) checkPredecessor() error {
 // to send local files to its first successor
 //
 func (n *Node) backup() error {
-	n.succMu.Lock()
-	defer n.succMu.Unlock()
+	n.succMu.RLock()
+	defer n.succMu.RUnlock()
 	if nodeEqual(n.Successors.get(1), n.Entry) {
 		// if the first successor is the node itself, do not backup
 		return nil
@@ -387,6 +387,8 @@ func (n *Node) backup() error {
 // to transfer parts of local keys to the new predecessor
 //
 func (n *Node) transferKeys() error {
+	n.predMu.RLock()
+	defer n.predMu.RUnlock()
 	if n.Predecessor.empty() {
 		return nil
 	}
