@@ -9,9 +9,10 @@ PROTOC=protoc
 PROTOC_DIR=$(CHORD_DIR)
 PROTOC_NAME=$(PROTOC_DIR)/chord.proto
 
+protoc:
+	$(PROTOC) --go_out=. --go-grpc_out=require_unimplemented_servers=false:. $(PROTOC_NAME) 
 
 build: clean
-	$(PROTOC) --go_out=. --go-grpc_out=require_unimplemented_servers=false:. $(PROTOC_NAME) 
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_NAME)
 
 test: build
