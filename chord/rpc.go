@@ -365,7 +365,7 @@ func (n *Node) GetCertificateRPC(ety *NodeEntry) error {
 	ctx := context.Background()
 	stream, err := client.GetCertificate(ctx, req)
 	if err != nil {
-		return false, fmt.Errorf("Error calling %s: %v", ety.ToString(), err)
+		return fmt.Errorf("Error calling %s: %v", ety.ToString(), err)
 	}
 	
 	// Create a local temp file
