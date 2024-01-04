@@ -29,12 +29,13 @@ type Node struct {
     Successors 	    *NodeList           // Successor List
     lenSuccessors   int                 // length of successor list
 
-    Bucket 		    map[string]int      // Buckets to store files
-    Backup          map[string]int      // Buckets to back up files of the predecessor
+    Bucket 		    map[string]*big.Int // Buckets to store files
+    Backup          map[string]*big.Int // Buckets to back up files of the predecessor
 
     rpcService      GRPCService         // Service for communications between Chord nodes
 
 	doneCh		    chan struct{}       // channel to notify sub-routines to shutdown
+    // flushCh         chan struct{}       // channel to notify chord client to flush
     verbose         bool                // whether to print log
     baseDir         string              // directory of the data storage
 }

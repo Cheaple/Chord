@@ -52,8 +52,8 @@ func NewNode(args utils.Arguments) *Node {
 	node.FingerTable = node.newNodeList(M + 1)  // one more element for the node itself; real fingers start from index 1
 	node.Predecessor = &NodeEntry{}  // set empty node entry
 	node.Successors = node.newNodeList(node.lenSuccessors)  // one more element for the node itself; real successors start from index 1
-	node.Bucket = make(map[string]int)
-	node.Backup = make(map[string]int)
+	node.Bucket = make(map[string]*big.Int)
+	node.Backup = make(map[string]*big.Int)
 
 	// Start data store
 	node.startDataStore()
@@ -120,13 +120,27 @@ func NewNode(args utils.Arguments) *Node {
 		}
 	}()
 
-	// Periodically send local buckets to its first successor
+	// Periodically backup local keys in its first successor
 	go func() {
 		ticker := time.NewTicker(time.Duration(args.CheckPredTime) * time.Millisecond)
 		for {
 			select {
 			case <-ticker.C:
 				node.backup()
+			case <-node.doneCh:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	// Periodically send local keys to the predecessor
+	go func() {
+		ticker := time.NewTicker(time.Duration(args.CheckPredTime) * time.Millisecond)
+		for {
+			select {
+			case <-ticker.C:
+				node.transferKeys()
 			case <-node.doneCh:
 				ticker.Stop()
 				return
@@ -321,7 +335,6 @@ func (n *Node) checkPredecessor() error {
 		n.DPrintf("checkPredecessor(): set n.predecessor = nil")
 		n.Predecessor = &NodeEntry{}  // set empty node entry
 
-		// TODO
 		// move backup files of the failed predecessor to the local buckets
 		keysToRecover := make([]string, 0)
 		for key, _ := range n.Backup {
@@ -333,7 +346,8 @@ func (n *Node) checkPredecessor() error {
 				continue
 			}
 			delete(n.Backup, key)
-			n.Bucket[key] = 1
+			n.Bucket[key] = hashString(key)
+			n.DPrintf("checkPredecessor(): recover backup file %s", key)
 		}
 	}
 
@@ -350,10 +364,48 @@ func (n *Node) backup() error {
 		return nil
 	}
 
-	// TODO
-	// call UploadRPC to send local files to the first successor
-	for fileName, _ := range n.Bucket {
-		n.UploadFileRPC(n.Successors.get(1), n.getFilePath(fileName), true)
+	// call UploadRPC to send local files to the first successor to backup
+	for key, _ := range n.Bucket {
+		n.UploadFileRPC(n.Successors.get(1), n.getFilePath(key), true)
+	}
+	
+	return nil
+}
+
+//
+// After update predecessor, node calls transferKeys()
+// to transfer parts of local keys to the new predecessor
+//
+func (n *Node) transferKeys() error {
+	if n.Predecessor.empty() {
+		return nil
+	}
+
+	pred := n.Predecessor
+	predId := new(big.Int).SetBytes(pred.Identifier)
+	keysToDelete := make([]string, 0)
+	for key, id := range n.Bucket {
+		if between(predId, id, n.Id, true) {
+			// if key in (n.predecessor, n], no need to transfer
+			continue  // skip this key
+		}
+
+		// transfer this key to the predecessor
+		_, err := n.UploadFileRPC(n.Predecessor, n.getFilePath(key), false)
+		if err != nil {
+			continue
+		}
+		keysToDelete = append(keysToDelete, key)
+	}
+
+	// Remove transfered keys
+	for _, key := range keysToDelete {
+		err := os.Remove(n.getFilePath(key))
+		if err != nil {
+			continue
+		}
+		delete(n.Bucket, key)
+		n.DPrintf("transferKeys(): tranfer local file '%s' to the predecessor %s", key, n.Predecessor.ToString())
 	}
 	
 	return nil

@@ -266,9 +266,9 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string, backup bool) (bool
 
 		// Send a chunk to the target node
 		if err := stream.Send(&FileMsg{
-			Name:    filepath.Base(filePath),
-			Content: buffer[:bytesRead],
-			Backup: backup,
+			Name:    	filepath.Base(filePath),
+			Content: 	buffer[:bytesRead],
+			Backup:		backup,
 		}); err != nil {
 			return false, fmt.Errorf("Error sending file %s: %v", filePath, err)
 		}
@@ -448,6 +448,7 @@ func (n *Node) SetPredecessor(ctx context.Context, pred *NodeEntry) (*BoolMsg, e
 	if n.Predecessor.empty() || nodeBetweenOpen(n.Predecessor, pred, n.Entry) {
 		n.DPrintf("SetPredecessor(): set predecessor = %s", pred.Address)
 		n.Predecessor = pred
+		// go n.transferKeys()
 		return &BoolMsg{ Success: true }, nil
 	}
 	return &BoolMsg{ Success: false }, nil
@@ -534,9 +535,9 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 		return fmt.Errorf("Error saving tmp file: %v", err)
 	}
 	if backup == true {
-		n.Backup[fileName] = 1
+		n.Backup[fileName] = hashString(fileName)
 	} else {
-		n.Bucket[fileName] = 1
+		n.Bucket[fileName] = hashString(fileName)
 	} 
 	return stream.SendAndClose(&BoolMsg{Success: true})
 }
