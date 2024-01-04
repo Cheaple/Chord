@@ -5,7 +5,7 @@ package chord
 //
 
 import (
-	"io/ioutil"
+	// "io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -49,15 +49,15 @@ func (n *Node) startDataStore() {
 	} else { 
 		// Read a existing folder
 		// Read node buckets from local files
-		files, err := ioutil.ReadDir(path.Join(nodeDir, "upload"))
-		if err != nil {
-			log.Fatalf("Error reading node f: " + err.Error())
-		}
-		for _, f := range files {
-			// Store file name in bucket
-			name := f.Name()
-			n.Bucket[name] = 1
-		}
+		// files, err := ioutil.ReadDir(path.Join(nodeDir, "upload"))
+		// if err != nil {
+		// 	log.Fatalf("Error reading node f: " + err.Error())
+		// }
+		// for _, f := range files {
+		// 	// Store file name in bucket
+		// 	name := f.Name()
+		// 	n.Bucket[name] = 1
+		// }
 	}
 
 	n.baseDir = nodeDir

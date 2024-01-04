@@ -62,6 +62,12 @@ func (n *Node) Print() {
 		id := hashString(k)
 		fmt.Printf("%10s  |  %10d\n", k, id)
 	}
+	fmt.Println("----- Backups -----")
+	fmt.Println("       Key  |  Indentifier")
+	for k, _ := range n.Backup {
+		id := hashString(k)
+		fmt.Printf("%10s  |  %10d\n", k, id)
+	}
 }
 
 

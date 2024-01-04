@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	// "os"
+	"os"
 	"time"
 
 	"chord/utils"
@@ -323,7 +323,18 @@ func (n *Node) checkPredecessor() error {
 
 		// TODO
 		// move backup files of the failed predecessor to the local buckets
-
+		keysToRecover := make([]string, 0)
+		for key, _ := range n.Backup {
+			keysToRecover = append(keysToRecover, key)
+		}
+		for _, key := range keysToRecover {
+			err := os.Rename(n.getBackupPath(key), n.getFilePath(key))
+			if err != nil {
+				continue
+			}
+			delete(n.Backup, key)
+			n.Bucket[key] = 1
+		}
 	}
 
 	return nil

@@ -87,7 +87,6 @@ func (n *Node) makeClient(ety *NodeEntry) (ChordClient, error) {
 func (n *Node) makeTlsClient(ety *NodeEntry) (ChordClient, error) {
 	// Load certificate of the target node
 	targetCerPath := n.getNodeCertificatePath(ety)
-	fmt.Println(targetCerPath)
 	if _, err := os.Stat(targetCerPath); err != nil {
 		// if the target certificate not in the local data store
 		// ask for the certificate from the target node
@@ -469,6 +468,7 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 	n.DPrintf("UploadFile() to handle UploadFileRPC")
 	filePath := ""
 	fileName := ""
+	backup := false
 	var tmpFile *os.File
 	defer tmpFile.Close()
 
@@ -489,13 +489,14 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 		if filePath == "" {
 			fileName = fileRequest.Name
 			filePath = n.getFilePath(fileName)
-			if fileRequest.Backup == true {
+			backup = fileRequest.Backup
+			if  backup == true {
 				filePath = n.getBackupPath(fileName)
 			}
 
 			// Check if the file already exists in the node's data store
 			_, ok := n.Bucket[fileName]
-			if fileRequest.Backup == true {
+			if backup == true {
 				_, ok = n.Backup[fileName]
 			}
 			if ok {
@@ -532,8 +533,8 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 	if err != nil {
 		return fmt.Errorf("Error saving tmp file: %v", err)
 	}
-	if fileRequest.Backup == true {
-		n.Backup[fileName] == 1
+	if backup == true {
+		n.Backup[fileName] = 1
 	} else {
 		n.Bucket[fileName] = 1
 	} 
