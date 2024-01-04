@@ -245,6 +245,7 @@ func (n *Node) stabilize() {
 	n.DPrintf("stabilize()")
 
 	// Update successor list
+	n.succMu.Lock()
 	for i := 1; i < n.lenSuccessors; i++ {
 		succ := n.Successors.get(i)
 		succSucc, err := n.GetSuccessorListRPC(succ)  // successor's successor list
@@ -263,6 +264,7 @@ func (n *Node) stabilize() {
 		n.DPrintf("stabilize(): update Successor List: %+v", n.Successors)
 		break
 	}
+	n.succMu.Unlock()
 
 	// Find the successor's current predecessor
 	succ := n.Successors.get(1)
@@ -310,7 +312,7 @@ func (n *Node) fixFinger(next int) int {
 	finger, err := n.locateSuccessor(nextId)
 	if err != nil || finger == nil {
 		fmt.Println("Error fixing finger table:", err)
-		return next
+		return next % M + 1
 	}
 
 	// Update finger entry
@@ -326,6 +328,8 @@ func (n *Node) fixFinger(next int) int {
 // to accept a new predecessor in notify
 //
 func (n *Node) checkPredecessor() error {
+	n.predMu.Lock()
+	defer n.predMu.Unlock()
 	if n.Predecessor.empty() {
 		return nil
 	}
@@ -359,6 +363,8 @@ func (n *Node) checkPredecessor() error {
 // to send local files to its first successor
 //
 func (n *Node) backup() error {
+	n.succMu.Lock()
+	defer n.succMu.Unlock()
 	if nodeEqual(n.Successors.get(1), n.Entry) {
 		// if the first successor is the node itself, do not backup
 		return nil
@@ -391,11 +397,11 @@ func (n *Node) transferKeys() error {
 		}
 
 		// transfer this key to the predecessor
+		keysToDelete = append(keysToDelete, key)
 		_, err := n.UploadFileRPC(n.Predecessor, n.getFilePath(key), false)
 		if err != nil {
 			continue
 		}
-		keysToDelete = append(keysToDelete, key)
 	}
 
 	// Remove transfered keys

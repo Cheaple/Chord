@@ -249,6 +249,9 @@ func (n *Node) UploadFileRPC(ety *NodeEntry, filePath string, backup bool) (bool
 	// Open a stream-based connection 
 	ctx := context.Background()
 	stream, err := client.UploadFile(ctx)
+	if err != nil {
+		return false, fmt.Errorf("Error calling %s: %v", ety.ToString(), err)
+	}
 	
 	// Allocate a buffer with `chunkSize` as the capacity
 	buffer := make([]byte, chunkSize)
@@ -301,6 +304,9 @@ func (n *Node) DownloadFileRPC(ety *NodeEntry, fileName string) (bool, error) {
 	req := &StringMsg{Str: fileName}
 	ctx := context.Background()
 	stream, err := client.DownloadFile(ctx, req)
+	if err != nil {
+		return false, fmt.Errorf("Error calling %s: %v", ety.ToString(), err)
+	}
 	
 	// Create a local temp file
 	n.DPrintf("create a new file: %s\n", fileName)
@@ -445,6 +451,8 @@ func (n *Node) GetSuccessorList(ctx context.Context, in *EmptyMsg) (*NodeList, e
 //
 func (n *Node) SetPredecessor(ctx context.Context, pred *NodeEntry) (*BoolMsg, error) {
 	n.DPrintf("SetPredecessor(): %+v", pred)
+	n.predMu.Lock()
+	defer n.predMu.Unlock()
 	if n.Predecessor.empty() || nodeBetweenOpen(n.Predecessor, pred, n.Entry) {
 		n.DPrintf("SetPredecessor(): set predecessor = %s", pred.Address)
 		n.Predecessor = pred

@@ -30,34 +30,39 @@ func (n *Node) startDataStore() {
 	nodeDir := path.Join(rootDir, string(n.Address))
 	if _, err := os.Stat(nodeDir); os.IsNotExist(err) {
 		// Create a new node folder
-		err := os.MkdirAll(nodeDir, os.ModePerm)
-		if err != nil {
+		if err := os.MkdirAll(nodeDir, os.ModePerm); err != nil {
 			log.Fatalf("Error creating node folder: " + err.Error())
-		} 
-		err = os.Mkdir(path.Join(nodeDir, "upload"), os.ModePerm)
-		if err != nil {
+		} 	
+	}
+
+	// Upload directory (if already existing, delete & re-create)
+	uploadDir := path.Join(nodeDir, "upload")
+	if _, err := os.Stat(uploadDir); err == nil {
+		if err := os.RemoveAll(uploadDir); err != nil {
+			log.Fatalf("Error clearing upload folder: " + err.Error())
+		}
+	}
+	if err := os.Mkdir(uploadDir, os.ModePerm); err != nil {
+		log.Fatalf("Error creating node upload folder: " + err.Error())
+	}
+
+	// Backup directory (if already existing, delete & re-create)
+	backupDir := path.Join(nodeDir, "backup")
+	if _, err := os.Stat(backupDir); err == nil {
+		if err := os.RemoveAll(backupDir); err != nil {
+			log.Fatalf("Error clearing upload folder: " + err.Error())
+		}
+	}
+	if err := os.Mkdir(backupDir, os.ModePerm); err != nil {
+		log.Fatalf("Error creating node upload folder: " + err.Error())
+	}
+
+	// Certificate directory
+	cerDir := path.Join(nodeDir, "certificate")
+	if _, err := os.Stat(cerDir); err != nil && os.IsNotExist(err) {
+		if err := os.Mkdir(cerDir, os.ModePerm); err != nil {
 			log.Fatalf("Error creating node upload folder: " + err.Error())
 		}
-		err = os.Mkdir(path.Join(nodeDir, "certificate"), os.ModePerm)
-		if err != nil {
-			log.Fatalf("Error creating node certificate folder: " + err.Error())
-		}
-		err = os.Mkdir(path.Join(nodeDir, "backup"), os.ModePerm)
-		if err != nil {
-			log.Fatalf("Error creating node backup folder: " + err.Error())
-		}
-	} else { 
-		// Read a existing folder
-		// Read node buckets from local files
-		// files, err := ioutil.ReadDir(path.Join(nodeDir, "upload"))
-		// if err != nil {
-		// 	log.Fatalf("Error reading node f: " + err.Error())
-		// }
-		// for _, f := range files {
-		// 	// Store file name in bucket
-		// 	name := f.Name()
-		// 	n.Bucket[name] = 1
-		// }
 	}
 
 	n.baseDir = nodeDir
