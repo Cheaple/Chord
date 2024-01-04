@@ -223,6 +223,8 @@ func (n *Node) lookup(key string) (*NodeEntry, error) {
 //
 func (n *Node) closestPreceding(id *big.Int, startIdx int) (*NodeEntry, int) {
 	n.DPrintf("closestPreceding(): id = %d", id)
+	n.fingerMu.RLock()
+	defer n.fingerMu.RUnlock()
 	for i := startIdx; i > 0; i-- {
 		prec := n.FingerTable.get(i)
 		precId := new(big.Int).SetBytes(prec.Identifier)
@@ -316,6 +318,8 @@ func (n *Node) fixFinger(next int) int {
 	}
 
 	// Update finger entry
+	n.fingerMu.Lock()
+	defer n.fingerMu.Unlock()
 	n.FingerTable.set(next, finger)
 	// n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
 	return next % M + 1  // next in [1, M]
