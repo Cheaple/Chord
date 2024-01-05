@@ -1,5 +1,18 @@
 # README
 
+#### Local test
+
+```{shell}
+make test
+```
+
+```{shell}
+make test2
+```
+
+```{shell}
+make test3
+```
 
 #### AWS test
 

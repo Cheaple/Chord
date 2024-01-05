@@ -277,6 +277,7 @@ func (n *Node) stabilize() {
 	}
 	
 	// Update successor list if newly joining node
+	n.succMu.Lock()
 	if nodeBetweenOpen(n.Entry, succPred, succ) {
 		// if succPred in (n, succ)
 		for i := n.lenSuccessors - 1; i > 1; i-- {
@@ -285,6 +286,7 @@ func (n *Node) stabilize() {
 		n.Successors.set(1, succPred)
 		n.DPrintf("stabilize(): update Successor List: %+v", n.Successors)
 	}
+	n.succMu.Unlock()
 
 	// Notify the successor to update its predecessor
 	_, err = n.NotifyRPC(n.Successors.get(1))
@@ -323,7 +325,6 @@ func (n *Node) fixFinger(next int) int {
 	n.FingerTable.set(next, finger)
 	// n.DPrintf("fixFinger(): finger[%d] = %+v", next, finger)
 	return next % M + 1  // next in [1, M]
-
 }
 
 //
@@ -337,6 +338,7 @@ func (n *Node) checkPredecessor() error {
 	if n.Predecessor.empty() {
 		return nil
 	}
+
 	_, err := n.CheckRPC(n.Predecessor)
 	if err != nil {
 		// predecessor failure
@@ -344,6 +346,10 @@ func (n *Node) checkPredecessor() error {
 		n.Predecessor = &NodeEntry{}  // set empty node entry
 
 		// move backup files of the failed predecessor to the local buckets
+		n.backupMu.Lock()
+		n.bucketMu.Lock()
+		defer n.backupMu.Unlock()
+		defer n.bucketMu.Unlock()
 		keysToRecover := make([]string, 0)
 		for key, _ := range n.Backup {
 			keysToRecover = append(keysToRecover, key)
@@ -375,6 +381,8 @@ func (n *Node) backup() error {
 	}
 
 	// call UploadRPC to send local files to the first successor to backup
+	n.bucketMu.RLock()
+	defer n.bucketMu.RUnlock()
 	for key, _ := range n.Bucket {
 		n.UploadFileRPC(n.Successors.get(1), n.getFilePath(key), true)
 	}
@@ -383,8 +391,8 @@ func (n *Node) backup() error {
 }
 
 //
-// After update predecessor, node calls transferKeys()
-// to transfer parts of local keys to the new predecessor
+// Each node periodically calls transferKeys()
+// to transfer parts of local keys to the predecessor
 //
 func (n *Node) transferKeys() error {
 	n.predMu.RLock()
@@ -392,9 +400,12 @@ func (n *Node) transferKeys() error {
 	if n.Predecessor.empty() {
 		return nil
 	}
-
 	pred := n.Predecessor
 	predId := new(big.Int).SetBytes(pred.Identifier)
+
+	// Check & transfer keys that should not belong to the current node
+	n.bucketMu.RLock()
+	defer n.bucketMu.Unlock()
 	keysToDelete := make([]string, 0)
 	for key, id := range n.Bucket {
 		if between(predId, id, n.Id, true) {

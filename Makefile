@@ -4,8 +4,8 @@ GOBUILD=$(GO) build
 MAIN_NAME=./main/main.go
 BINARY_NAME=./chord.exe
 CHORD_DIR=./chord
-# IP=127.0.0.1
-IP=172.23.31.155
+IP=127.0.0.1
+# IP=172.23.31.155
 
 PROTOC=protoc
 PROTOC_DIR=$(CHORD_DIR)

@@ -1,5 +1,7 @@
 package chord
 
+// TLS feature used for file transferring
+
 import (
 	"crypto/rand"
 	"crypto/rsa"

@@ -23,12 +23,12 @@ import (
 func (n *Node) Print() {
 	fmt.Println("Node Address:", n.Address)
 	fmt.Println("Node Address for TLS:", n.TlsAddress)
-	fmt.Println("Node Identifier:", new(big.Int).SetBytes(n.Id.Bytes()))
 	if n.Predecessor.empty() {
 		fmt.Println("Node Predecessor: nil")
 	} else {
 		fmt.Println("Node Predecessor:", new(big.Int).SetBytes(n.Predecessor.Identifier))
 	}
+	fmt.Println("Node Identifier:", new(big.Int).SetBytes(n.Id.Bytes()))
 
 	fmt.Println("------ Successor List ------")
 	fmt.Println("Successors  |  Identifier  |  Address ")
