@@ -507,12 +507,11 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 			}
 
 			// Check if the file already exists in the node's data store
-			n.bucketMu.Lock()
-			_, ok := n.Bucket[fileName]
+			ok := true
 			if backup == true {
-				n.bucketMu.Unlock()
-				n.backupMu.Lock()
 				_, ok = n.Backup[fileName]
+			} else {
+				_, ok = n.Bucket[fileName]
 			}
 			if ok {
 				return stream.SendAndClose(
@@ -549,11 +548,13 @@ func (n *Node) UploadFile(stream Chord_UploadFileServer) error {
 		return fmt.Errorf("Error saving tmp file: %v", err)
 	}
 	if backup == true {
-		n.Backup[fileName] = hashString(fileName)
+		n.backupMu.Lock()
 		n.backupMu.Unlock()
+		n.Backup[fileName] = hashString(fileName)
 	} else {
-		n.Bucket[fileName] = hashString(fileName)
+		n.bucketMu.Lock()
 		n.bucketMu.Unlock()
+		n.Bucket[fileName] = hashString(fileName)
 	} 
 	return stream.SendAndClose(&BoolMsg{Success: true})
 }
@@ -568,8 +569,6 @@ func (n *Node) DownloadFile(in *StringMsg, stream Chord_DownloadFileServer) erro
 	filePath := n.getFilePath(fileName)
 
 	// Check if the file exists in the node's data store
-	n.bucketMu.RLock()
-	defer n.bucketMu.RUnlock()
 	_, ok := n.Bucket[fileName]
 	if ok == false {
 		return fmt.Errorf("File not found")

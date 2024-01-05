@@ -289,6 +289,8 @@ func (n *Node) stabilize() {
 	n.succMu.Unlock()
 
 	// Notify the successor to update its predecessor
+	n.succMu.RLock()
+	defer n.succMu.RUnlock()
 	_, err = n.NotifyRPC(n.Successors.get(1))
 	if err != nil {
 		fmt.Println("Error notifying:", err)
@@ -333,27 +335,29 @@ func (n *Node) fixFinger(next int) int {
 // to accept a new predecessor in notify
 //
 func (n *Node) checkPredecessor() error {
-	n.predMu.Lock()
-	defer n.predMu.Unlock()
+	n.predMu.RLock()
 	if n.Predecessor.empty() {
+		n.predMu.RUnlock()
 		return nil
 	}
-
 	_, err := n.CheckRPC(n.Predecessor)
+	n.predMu.RUnlock()
+
+	// Deal with predecessor failure
 	if err != nil {
-		// predecessor failure
 		n.DPrintf("checkPredecessor(): set n.predecessor = nil")
+		n.predMu.Lock()
 		n.Predecessor = &NodeEntry{}  // set empty node entry
+		n.predMu.Unlock()
 
 		// move backup files of the failed predecessor to the local buckets
-		n.backupMu.Lock()
-		n.bucketMu.Lock()
-		defer n.backupMu.Unlock()
-		defer n.bucketMu.Unlock()
+		n.backupMu.RLock()
 		keysToRecover := make([]string, 0)
 		for key, _ := range n.Backup {
 			keysToRecover = append(keysToRecover, key)
 		}
+		n.backupMu.RUnlock()
+
 		for _, key := range keysToRecover {
 			err := os.Rename(n.getBackupPath(key), n.getFilePath(key))
 			if err != nil {
@@ -404,7 +408,7 @@ func (n *Node) transferKeys() error {
 	predId := new(big.Int).SetBytes(pred.Identifier)
 
 	// Check & transfer keys that should not belong to the current node
-	n.bucketMu.RLock()
+	n.bucketMu.Lock()
 	defer n.bucketMu.Unlock()
 	keysToDelete := make([]string, 0)
 	for key, id := range n.Bucket {
